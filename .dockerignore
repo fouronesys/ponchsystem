@@ -16,3 +16,5 @@ artifacts/mockup-sandbox
 artifacts/*/.replit-artifact
 coverage
 tmp
+data
+.data

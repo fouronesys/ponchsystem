@@ -1,51 +1,49 @@
 import {
-  boolean,
   index,
-  pgTable,
+  integer,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const employeesTable = pgTable(
+export const employeesTable = sqliteTable(
   "employees",
   {
-    id: uuid("id").primaryKey(),
+    id: text("id").primaryKey(),
     clerkUserId: text("clerk_user_id").notNull(),
     displayName: text("display_name").notNull(),
     role: text("role").notNull().default("employee"),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     uniqueIndex("employees_clerk_user_id_unique").on(table.clerkUserId),
   ],
 );
 
-export const attendanceTokensTable = pgTable(
+export const attendanceTokensTable = sqliteTable(
   "attendance_tokens",
   {
-    id: uuid("id").primaryKey(),
+    id: text("id").primaryKey(),
     tokenHash: text("token_hash").notNull(),
     encryptedToken: text("encrypted_token").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    usedAt: timestamp("used_at", { withTimezone: true }),
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    usedAt: integer("used_at", { mode: "timestamp_ms" }),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     uniqueIndex("attendance_tokens_hash_unique").on(table.tokenHash),
     uniqueIndex("attendance_tokens_one_active_unique")
       .on(table.isActive)
-      .where(sql`${table.isActive} = true`),
+      .where(sql`${table.isActive} = 1`),
     index("attendance_tokens_validation_idx").on(
       table.tokenHash,
       table.isActive,
@@ -54,17 +52,17 @@ export const attendanceTokensTable = pgTable(
   ],
 );
 
-export const attendanceEventsTable = pgTable(
+export const attendanceEventsTable = sqliteTable(
   "attendance_events",
   {
-    id: uuid("id").primaryKey(),
-    employeeId: uuid("employee_id")
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id")
       .notNull()
       .references(() => employeesTable.id, { onDelete: "restrict" }),
     type: text("type").notNull(),
-    occurredAt: timestamp("occurred_at", { withTimezone: true })
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .$defaultFn(() => new Date()),
     location: text("location"),
     deviceLabel: text("device_label"),
   },
