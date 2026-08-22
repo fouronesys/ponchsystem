@@ -1,0 +1,1 @@
+window.__CONTROL_ASISTENCIA_CONFIG__ = {};

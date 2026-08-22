@@ -20,13 +20,25 @@ import AdminPage from "@/pages/admin";
 import EmployeePage from "@/pages/employee";
 import NotFound from "@/pages/not-found";
 
+declare global {
+  interface Window {
+    __CONTROL_ASISTENCIA_CONFIG__?: {
+      clerkPublishableKey?: string;
+      clerkProxyUrl?: string;
+    };
+  }
+}
+
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+  window.__CONTROL_ASISTENCIA_CONFIG__?.clerkPublishableKey ??
+    import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl =
+  window.__CONTROL_ASISTENCIA_CONFIG__?.clerkProxyUrl ??
+  import.meta.env.VITE_CLERK_PROXY_URL;
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
