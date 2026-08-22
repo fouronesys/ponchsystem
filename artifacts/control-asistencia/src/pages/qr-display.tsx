@@ -12,27 +12,21 @@ type DisplayPhase = "ready" | "eating" | "thanks";
 
 function FarbotMascot({ className = "" }: { className?: string }) {
   return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      viewBox="0 0 240 240"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="50" y="68" width="140" height="116" rx="44" fill="#17324D" />
-      <rect x="62" y="78" width="116" height="71" rx="30" fill="#2E6685" />
-      <path d="M120 48V67M109 47H131" stroke="#17324D" strokeWidth="12" strokeLinecap="round" />
-      <circle cx="91" cy="111" r="16" fill="#DFF8FF" />
-      <circle cx="149" cy="111" r="16" fill="#DFF8FF" />
-      <circle cx="94" cy="113" r="7" fill="#17324D" />
-      <circle cx="146" cy="113" r="7" fill="#17324D" />
-      <path className="farbot-mouth" d="M87 143C105 157 135 157 153 143C150 169 137 181 120 181C103 181 90 169 87 143Z" fill="#071725" />
-      <path className="farbot-tongue" d="M104 168C113 162 127 162 136 168C132 177 108 177 104 168Z" fill="#F27D7D" />
-      <rect x="82" y="176" width="76" height="28" rx="14" fill="#F5B942" />
-      <path d="M68 176L39 201M172 176L201 201" stroke="#17324D" strokeWidth="18" strokeLinecap="round" />
-      <path d="M73 196L48 214M167 196L192 214" stroke="#2E6685" strokeWidth="18" strokeLinecap="round" />
-      <circle cx="120" cy="31" r="12" fill="#F5B942" />
-    </svg>
+    <div className={`farbot-3d ${className}`} aria-hidden="true">
+      <div className="farbot-antenna"><span /></div>
+      <div className="farbot-shadow" />
+      <div className="farbot-body">
+        <div className="farbot-face">
+          <span className="farbot-eye farbot-eye--left" />
+          <span className="farbot-eye farbot-eye--right" />
+          <div className="farbot-mouth"><span className="farbot-tongue" /></div>
+        </div>
+        <div className="farbot-belly" />
+        <div className="farbot-bumper" />
+      </div>
+      <div className="farbot-arm farbot-arm--left" />
+      <div className="farbot-arm farbot-arm--right" />
+    </div>
   );
 }
 
@@ -151,11 +145,14 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
               <QRCodeSVG value={qrValue} size={220} level="H" includeMargin className="qr-paper-svg" />
               <span className="qr-paper-label">ASISTENCIA</span>
             </div>
+            <div className="qr-paper-edge" aria-hidden="true" />
             <div className="qr-suction" aria-hidden="true" />
             <div className="qr-crumb qr-crumb--one" aria-hidden="true" />
             <div className="qr-crumb qr-crumb--two" aria-hidden="true" />
             <div className="qr-crumb qr-crumb--three" aria-hidden="true" />
-            <FarbotMascot className="qr-display-robot" />
+            <div className="qr-display-robot-wrap">
+              <FarbotMascot className="qr-display-robot" />
+            </div>
           </div>
         )}
 
