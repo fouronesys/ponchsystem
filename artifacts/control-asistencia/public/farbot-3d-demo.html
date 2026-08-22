@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Farbot 3D demo</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif}
+body{overflow:hidden;background:radial-gradient(circle at 50% 38%,rgba(80,217,212,.24),transparent 34rem),linear-gradient(145deg,#071725,#0f2f45 50%,#081923);color:#ecfeff}
+.stage{position:relative;display:grid;place-items:center;width:min(90vw,760px);height:min(90vw,760px);max-height:90svh;margin:auto}
+.code{width:min(78vw,620px);height:min(78vw,620px);padding:7%;border:clamp(12px,2vw,20px) solid #fff;border-radius:clamp(20px,3vw,38px);background:#fff;box-shadow:0 30px 100px #0006;animation:code 3.35s ease-in forwards;animation-delay:var(--seek)}
+.fake-qr{width:100%;height:100%;background:repeating-conic-gradient(#071725 0 25%,#fff 0 50%) 50%/16% 16%}
+.eat{position:absolute;inset:0;overflow:hidden;display:grid;place-items:center;border-radius:50%;perspective:1100px;animation:overlay 3.35s ease-in forwards;animation-delay:var(--seek)}
+.paper{position:absolute;left:50%;top:56%;z-index:3;width:clamp(150px,25vw,220px);aspect-ratio:1;padding:14px;border:7px solid #fff;border-radius:8px;background:#fff;box-shadow:0 18px 35px #0006;transform-style:preserve-3d;animation:paper 3.35s cubic-bezier(.2,.72,.16,1) forwards;animation-delay:var(--seek)}
+.paper .fake-qr{height:88%;border:3px solid #071725}.label{position:absolute;bottom:4px;left:0;right:0;color:#17324d;text-align:center;font-size:9px;font-weight:900;letter-spacing:.16em}
+.suction{position:absolute;z-index:1;width:15%;aspect-ratio:1;border:4px solid #8ee8e0bf;border-radius:50%;opacity:0;animation:suction 3.35s ease-out forwards;animation-delay:var(--seek)}
+.robot-wrap{position:absolute;z-index:2;width:min(78vw,640px);height:min(78vw,640px);transform-style:preserve-3d;animation:robot 3.35s cubic-bezier(.2,.75,.18,1) forwards;animation-delay:var(--seek)}
+.robot{position:relative;width:100%;height:100%;transform-style:preserve-3d;filter:drop-shadow(0 35px 22px #0006)}
+.shadow{position:absolute;left:17%;bottom:9%;width:66%;height:10%;border-radius:50%;background:#0006;filter:blur(9px);transform:translateZ(-18px)}
+.body{position:absolute;left:19%;top:27%;width:62%;height:56%;border:clamp(7px,1vw,13px) solid #071725;border-radius:38% 38% 28% 28%;background:linear-gradient(145deg,#66a9c0,#2e6685 42%,#17324d);box-shadow:inset 16px 17px #fff2,inset -18px -20px #03131f47,12px 18px #0a2031;transform:translateZ(20px) rotateX(-4deg);transform-style:preserve-3d}
+.face{position:absolute;left:8%;top:7%;width:84%;height:59%;border-radius:32%;background:linear-gradient(160deg,#347897,#22556f);box-shadow:inset 8px 9px #fff2,inset -8px -12px #03131f40;transform:translateZ(22px)}
+.eye{position:absolute;top:25%;width:19%;aspect-ratio:1;border:5px solid #b6f5f0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 12%,#dff8ff 14% 48%,#65c8cd 52%);box-shadow:0 0 14px #8ee8e0cc,inset -5px -5px #1f708959}.eye:after{content:"";position:absolute;right:23%;bottom:19%;width:31%;aspect-ratio:1;border-radius:50%;background:#071725}.left{left:17%}.right{right:17%}
+.mouth{position:absolute;left:21%;bottom:-2%;width:58%;height:39%;overflow:hidden;border:7px solid #071725;border-radius:18% 18% 48% 48%;background:radial-gradient(ellipse at 50% 0%,#3c6980 0 20%,#071725 22%);box-shadow:inset 0 -9px #0006;transform:translateZ(16px) scaleY(.8);transform-origin:50% 0;animation:chew 3.35s ease-in-out forwards;animation-delay:var(--seek)}
+.tongue{position:absolute;left:24%;bottom:-6%;width:52%;height:44%;border-radius:50% 50% 25% 25%;background:linear-gradient(#ffaaa0,#d45f6c);animation:tongue 3.35s ease-in-out forwards;animation-delay:var(--seek)}
+.belly{position:absolute;left:24%;bottom:8%;width:52%;height:21%;border-radius:50%;background:linear-gradient(#f8ca58,#d58b21);box-shadow:inset 0 5px #fff5,0 5px #102d40;transform:translateZ(23px)}
+.bumper{position:absolute;left:32%;bottom:-5%;width:36%;height:12%;border-radius:99px;background:linear-gradient(#ffda6d,#c87c1f);transform:translateZ(30px)}
+.arm{position:absolute;top:59%;width:27%;height:14%;border:clamp(7px,1vw,13px) solid #071725;border-radius:999px;background:linear-gradient(145deg,#65aabd,#1a4762);box-shadow:inset 7px 5px #fff2,7px 9px #0414208c;transform:translateZ(6px) rotate(35deg)}.arm.left{left:4%}.arm.right{right:4%;transform:translateZ(6px) rotate(-35deg)}
+.antenna{position:absolute;z-index:3;left:47%;top:5%;width:7%;height:27%;border-left:clamp(7px,1vw,13px) solid #071725;transform:translateZ(30px) rotate(2deg)}.antenna:after{content:"";position:absolute;left:50%;top:-18%;width:250%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff3a2,#f5b942 48%,#bc701b);box-shadow:0 0 20px #f5b942}
+.thanks{display:none;position:absolute;inset:0;z-index:8;place-items:center;text-align:center;border-radius:42px;background:linear-gradient(145deg,#0e4963,#17324d)}.thanks.show{display:grid}.thanks h1{font-size:clamp(3rem,8vw,6rem);margin:.3rem 0}.thanks p{margin:0}.thanks small{color:#8ee8e0;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+@keyframes robot{0%,13%{transform:translateX(130%) rotateY(-18deg) scale(.86)}28%{transform:translateX(18%) rotateY(10deg) scale(1.02)}48%{transform:translateX(0) rotateY(-3deg) scale(1.08)}55%,67%{transform:translateX(-2%) rotateY(2deg) scale(1.1)}72%,80%{transform:translateX(-2%) rotateY(-3deg) scale(1.08)}88%,100%{transform:translateX(-22%) scale(1.12)}}
+@keyframes paper{0%,8%{opacity:0;transform:translate(-220%,-50%) rotate(-28deg) rotateY(0) scale(.72)}12%{opacity:1}27%{transform:translate(-135%,-50%) rotate(12deg) rotateY(5deg)}46%{transform:translate(-62%,-50%) rotate(-7deg) rotateY(-8deg) scale(1.04)}58%{transform:translate(-22%,-50%) rotate(9deg) rotateY(18deg) scale(.88)}67%{transform:translate(-10%,-50%) rotate(22deg) rotateY(46deg) scale(.58)}76%{transform:translate(-3%,-50%) rotate(32deg) rotateY(70deg) scale(.25)}86%,100%{transform:translate(3%,-50%) rotate(42deg) rotateY(90deg) scale(.02);opacity:0}}
+@keyframes code{0%,42%{transform:scale(1);opacity:1}66%{transform:scale(.8) translateX(-8%);opacity:.88}100%{transform:scale(.18) translateX(-140%);opacity:0}}@keyframes overlay{0%,38%{background:transparent}58%{background:#17324d52}100%{background:#17324d}}@keyframes suction{0%,48%{opacity:0;transform:scale(.3)}58%{opacity:1;transform:scale(1)}78%{opacity:0;transform:scale(2.5)}}@keyframes chew{0%,54%{transform:translateZ(16px) scaleY(.78)}59%,66%{transform:translateZ(16px) scaleY(1.18) translateY(3px)}69%,76%{transform:translateZ(16px) scaleY(.72)}79%,86%{transform:translateZ(16px) scaleY(1.14) translateY(2px)}90%,100%{transform:translateZ(16px) scaleY(.84)}}@keyframes tongue{0%,55%{opacity:.7;transform:scale(.8)}60%,76%{opacity:1;transform:scale(1.15) translateY(3px)}80%,100%{opacity:.7;transform:scale(.9)}}
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="code"><div class="fake-qr"></div></div>
+  <div class="eat">
+    <div class="paper"><div class="fake-qr"></div><span class="label">ASISTENCIA</span></div>
+    <div class="suction"></div>
+    <div class="robot-wrap"><div class="robot"><div class="shadow"></div><div class="antenna"></div><div class="body"><div class="face"><span class="eye left"></span><span class="eye right"></span><div class="mouth"><span class="tongue"></span></div></div><div class="belly"></div><div class="bumper"></div></div><div class="arm left"></div><div class="arm right"></div></div></div>
+  </div>
+  <div class="thanks"><div><small>Farbot confirma tu registro</small><h1>¡Gracias!</h1><p>Tu asistencia quedó registrada.</p></div></div>
+</main>
+<script>
+const frame=Number(new URLSearchParams(location.search).get("frame")||"0");
+document.documentElement.style.setProperty("--seek",`${-Math.max(0,frame)}s`);
+if(frame>=3.45) document.querySelector(".thanks").classList.add("show");
+</script>
+</body>
+</html>
