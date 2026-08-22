@@ -9,7 +9,9 @@ import { authSessionsTable, db, employeesTable, loginEventsTable, type Employee 
 import { and, eq, gt, lt } from "drizzle-orm";
 import type { Logger } from "pino";
 
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+// Persistent enough for employees to use the daily QR without logging in again,
+// while still expiring automatically on shared or lost devices.
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PASSWORD_KEY_LENGTH = 64;
 export const MIN_PASSWORD_LENGTH = 8;
 const failedAttempts = new Map<string, { count: number; resetAt: number }>();

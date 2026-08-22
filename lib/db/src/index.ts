@@ -7,6 +7,28 @@ import * as schema from "./schema";
 const databasePath =
   process.env.SQLITE_DATABASE_PATH ??
   path.resolve(process.cwd(), "data", "attendance.sqlite");
+
+function resetDatabaseIfRequested() {
+  if (process.env.RESET_DATABASE?.trim().toLowerCase() !== "yes") {
+    return;
+  }
+
+  const dataDirectory = path.dirname(databasePath);
+  for (const file of [
+    databasePath,
+    `${databasePath}-wal`,
+    `${databasePath}-shm`,
+    `${databasePath}-journal`,
+  ]) {
+    fs.rmSync(file, { force: true });
+  }
+  fs.rmSync(path.join(dataDirectory, "uploads"), { recursive: true, force: true });
+  console.warn(
+    "RESET_DATABASE=yes detected: the attendance database and uploaded evidence were cleared before startup.",
+  );
+}
+
+resetDatabaseIfRequested();
 fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
 const sqlite = new Database(databasePath);
