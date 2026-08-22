@@ -90,6 +90,7 @@ export const attendanceTokensTable = sqliteTable(
       table.isActive,
       table.expiresAt,
     ),
+    index("attendance_tokens_expiry_idx").on(table.expiresAt),
   ],
 );
 

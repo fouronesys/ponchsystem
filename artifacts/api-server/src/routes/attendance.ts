@@ -14,6 +14,7 @@ import {
 import {
   attendanceEventsTable,
   attendanceTokensTable,
+  cleanupExpiredQrRecords,
   db,
   employeesTable,
   qrDisplayLinksTable,
@@ -42,8 +43,22 @@ import {
   tokenExpiry,
 } from "../lib/qrSecurity";
 import { removeImage, saveImage } from "../lib/imageStorage";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+const QR_CLEANUP_INTERVAL_MS = 60_000;
+
+const qrCleanupTimer = setInterval(() => {
+  try {
+    const removed = cleanupExpiredQrRecords();
+    if (removed.attendanceTokens > 0 || removed.displayLinks > 0) {
+      logger.info(removed, "Expired QR records cleaned up");
+    }
+  } catch (error) {
+    logger.warn({ err: error }, "Expired QR record cleanup failed");
+  }
+}, QR_CLEANUP_INTERVAL_MS);
+qrCleanupTimer.unref();
 
 function setQrDisplayNoCacheHeaders(res: Response): void {
   res.set({

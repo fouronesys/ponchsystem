@@ -139,6 +139,8 @@ sqlite.exec(`
     ON attendance_tokens (is_active) WHERE is_active = 1;
   CREATE INDEX IF NOT EXISTS attendance_tokens_validation_idx
     ON attendance_tokens (token_hash, is_active, expires_at);
+   CREATE INDEX IF NOT EXISTS attendance_tokens_expiry_idx
+     ON attendance_tokens (expires_at);
 
   CREATE TABLE IF NOT EXISTS qr_display_links (
     id TEXT PRIMARY KEY NOT NULL,
@@ -179,5 +181,50 @@ for (const [column, definition] of [
   }
 }
 export const db = drizzle(sqlite, { schema });
+
+const QR_CLEANUP_BATCH_SIZE = 100;
+
+/**
+ * Removes QR credentials that can no longer be accepted.
+ *
+ * The cleanup is deliberately bounded so it can run in the server process
+ * without holding SQLite's write lock for an unbounded amount of time.
+ */
+export function cleanupExpiredQrRecords(
+  now = new Date(),
+  batchSize = QR_CLEANUP_BATCH_SIZE,
+): { attendanceTokens: number; displayLinks: number } {
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new Error("QR cleanup batch size must be a positive integer");
+  }
+
+  const expiresAt = now.getTime();
+  return sqlite.transaction(() => {
+    const deleteTokens = sqlite.prepare(`
+      DELETE FROM attendance_tokens
+      WHERE id IN (
+        SELECT id
+        FROM attendance_tokens
+        WHERE expires_at <= ?
+        ORDER BY expires_at ASC
+        LIMIT ?
+      )
+    `);
+    const deleteDisplayLinks = sqlite.prepare(`
+      DELETE FROM qr_display_links
+      WHERE id IN (
+        SELECT id
+        FROM qr_display_links
+        WHERE expires_at <= ?
+        ORDER BY expires_at ASC
+        LIMIT ?
+      )
+    `);
+
+    const attendanceTokens = deleteTokens.run(expiresAt, batchSize).changes;
+    const displayLinks = deleteDisplayLinks.run(expiresAt, batchSize).changes;
+    return { attendanceTokens, displayLinks };
+  })();
+}
 
 export * from "./schema";
