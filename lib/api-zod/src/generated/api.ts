@@ -26,7 +26,7 @@ export const GetTodayAttendanceResponse = zod.object({
   "state": zod.enum(['out', 'checked_in', 'checked_out']),
   "checkIn": zod.coerce.date().nullable(),
   "checkOut": zod.coerce.date().nullable(),
-  "workedMinutes": zod.int()
+  "workedMinutes": zod.number()
 })
 
 
@@ -60,7 +60,7 @@ export const GetQrStatusResponse = zod.object({
   "token": zod.string(),
   "expiresAt": zod.coerce.date(),
   "rotatedAt": zod.coerce.date(),
-  "remainingSeconds": zod.int()
+  "remainingSeconds": zod.number()
 })
 
 
@@ -71,7 +71,7 @@ export const RotateQrTokenResponse = zod.object({
   "token": zod.string(),
   "expiresAt": zod.coerce.date(),
   "rotatedAt": zod.coerce.date(),
-  "remainingSeconds": zod.int()
+  "remainingSeconds": zod.number()
 })
 
 
@@ -98,10 +98,10 @@ export const ListAttendanceEventsResponse = zod.array(ListAttendanceEventsRespon
  * @summary Get attendance dashboard summary
  */
 export const GetAttendanceSummaryResponse = zod.object({
-  "present": zod.int(),
-  "expected": zod.int(),
-  "late": zod.int(),
-  "checkedOut": zod.int(),
+  "present": zod.number(),
+  "expected": zod.number(),
+  "late": zod.number(),
+  "checkedOut": zod.number(),
   "lastEvent": zod.union([zod.object({
   "id": zod.string(),
   "employeeId": zod.string(),

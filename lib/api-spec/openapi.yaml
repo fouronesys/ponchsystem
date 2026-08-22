@@ -165,7 +165,7 @@ components:
         checkOut:
           type: ["string", "null"]
           format: date-time
-        workedMinutes: { type: integer }
+        workedMinutes: { type: number }
       required: [employeeId, employeeName, state, checkIn, checkOut, workedMinutes]
     QrStatus:
       type: object
@@ -179,15 +179,15 @@ components:
           type: string
           format: date-time
         remainingSeconds:
-          type: integer
+          type: number
       required: [token, expiresAt, rotatedAt, remainingSeconds]
     AttendanceSummary:
       type: object
       properties:
-        present: { type: integer }
-        expected: { type: integer }
-        late: { type: integer }
-        checkedOut: { type: integer }
+        present: { type: number }
+        expected: { type: number }
+        late: { type: number }
+        checkedOut: { type: number }
         lastEvent:
           oneOf:
             - $ref: "#/components/schemas/AttendanceEvent"

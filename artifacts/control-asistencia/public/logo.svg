@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Control de Asistencia">
+  <rect width="80" height="80" rx="18" fill="#34495e"/>
+  <path d="M40 14 61 22v17c0 14-9.1 23.9-21 28-11.9-4.1-21-14-21-28V22l21-8Z" fill="#eff6ff"/>
+  <path d="m29 40 7 7 15-16" fill="none" stroke="#34495e" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/>
+</svg>

@@ -1,0 +1,1 @@
+- [OpenAPI numeric validation](openapi-numeric-validation.md) — this workspace's generator emits unsupported Zod integer helpers; model counters as numbers unless generator support changes.
