@@ -267,7 +267,8 @@ function EmployeeManager() {
 
   const create = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setSaving(true);
     setError("");
     try {
@@ -286,7 +287,7 @@ function EmployeeManager() {
           profilePhoto,
         }),
       });
-      event.currentTarget.reset();
+      formElement.reset();
       await refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No pudimos crear el empleado.");
