@@ -130,7 +130,16 @@ export default function AttendanceLinkPage({ token }: { token: string }) {
               </div>
             </>
           )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="space-y-1 text-sm text-destructive">
+              <p>{error}</p>
+              {error.includes("QR expiró") && (
+                <p className="text-xs text-muted-foreground">
+                  Vuelve a escanear el código QR que aparece en la pantalla de recepción.
+                </p>
+              )}
+            </div>
+          )}
           <p className="text-center text-xs text-muted-foreground">El QR se valida una sola vez para proteger tu registro.</p>
         </CardContent>
       </Card>

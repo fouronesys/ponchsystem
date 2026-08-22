@@ -6,7 +6,9 @@ import {
   randomUUID,
 } from "node:crypto";
 
-const TOKEN_TTL_MS = 90_000;
+// The QR must remain valid long enough for scanning, authentication, camera
+// permission, selfie capture, and final confirmation on a phone.
+const TOKEN_TTL_MS = 5 * 60_000;
 const DISPLAY_LINK_TTL_MS = 8 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 6;
 const ATTEMPT_WINDOW_MS = 5 * 60_000;
