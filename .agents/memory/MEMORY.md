@@ -1,1 +1,2 @@
 - [OpenAPI numeric validation](openapi-numeric-validation.md) — this workspace's generator emits unsupported Zod integer helpers; model counters as numbers unless generator support changes.
+- [Docker TypeScript cache](docker-typescript-cache.md) — exclude incremental TypeScript metadata from clean container builds when compiled output is excluded.
