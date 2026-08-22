@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShieldCheck, User, BarChart, LogOut } from "lucide-react";
+import { User, BarChart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -19,8 +19,8 @@ export function Layout({ children }: LayoutProps) {
       <header className="border-b bg-card">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            <ShieldCheck className="w-6 h-6" />
-            <span className="font-semibold tracking-tight text-lg">Control de Asistencia</span>
+            <img src={`${basePath}/logo.svg`} alt="" className="h-8 w-8 shrink-0" />
+            <span className="font-semibold tracking-tight text-lg">FarCheck <span className="text-primary/70">RD</span></span>
           </div>
 
           <nav className="flex items-center gap-1">

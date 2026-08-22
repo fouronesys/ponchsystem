@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Redirect, Route, Switch, useLocation, useRoute, Router as WouterRouter } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Layout } from "@/components/layout";
@@ -20,13 +20,11 @@ function LandingPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,_#dce9f6,_transparent_45%),linear-gradient(135deg,_#f8fafc,_#eef4f9)] px-5">
       <section className="max-w-xl text-center">
-        <div className="mx-auto mb-7 grid h-16 w-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-          <ShieldCheck className="h-8 w-8" />
-        </div>
-        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Registro seguro</p>
+        <img src={`${basePath}/logo.svg`} alt="FarCheck RD" className="mx-auto mb-6 h-20 w-20 drop-shadow-lg" />
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">FarCheck RD · Registro seguro</p>
         <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Cada jornada, validada en el momento.</h1>
         <p className="mx-auto mt-5 max-w-lg text-pretty text-lg leading-8 text-muted-foreground">
-          Control de Asistencia registra entrada y salida con sesión local, QR de un solo uso y selfie verificable.
+          FarCheck RD registra entrada y salida con sesión local, QR de un solo uso y selfie verificable.
         </p>
         <Button size="lg" className="mt-8" onClick={() => window.location.assign(`${basePath}/sign-in`)}>
           Iniciar sesión <ArrowRight className="ml-2 h-4 w-4" />
@@ -62,8 +60,13 @@ function SignInPage() {
     <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,_#dce9f6,_transparent_45%),linear-gradient(135deg,_#f8fafc,_#eef4f9)] px-4">
       <form onSubmit={submit} className="w-full max-w-md space-y-5 rounded-2xl border bg-card p-8 shadow-xl">
         <div>
-          <ShieldCheck className="mb-4 h-9 w-9 text-primary" />
-          <h1 className="text-2xl font-bold">Acceso de personal</h1>
+          <div className="mb-4 flex items-center gap-3">
+            <img src={`${basePath}/logo.svg`} alt="" className="h-10 w-10" />
+            <div>
+              <p className="text-sm font-semibold text-primary">FarCheck RD</p>
+              <h1 className="text-2xl font-bold">Acceso de personal</h1>
+            </div>
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">Usa las credenciales asignadas por administración.</p>
         </div>
         <label className="block text-sm font-medium">

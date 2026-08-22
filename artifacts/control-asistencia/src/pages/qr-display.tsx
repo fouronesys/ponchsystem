@@ -8,7 +8,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 type DisplayPhase = "ready" | "eating" | "thanks";
 
-function RobotMascot({ className = "" }: { className?: string }) {
+function FarbotMascot({ className = "" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
@@ -56,7 +56,7 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    document.title = "Código de asistencia";
+    document.title = "FarCheck RD · Código de asistencia";
     const preventContextMenu = (event: Event) => event.preventDefault();
     const preventDrag = (event: Event) => event.preventDefault();
     const preventCopy = (event: Event) => event.preventDefault();
@@ -139,7 +139,7 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
 
         {phase === "eating" && (
           <div className="qr-display-eating" aria-label="Registro confirmado">
-            <RobotMascot className="qr-display-robot" />
+            <FarbotMascot className="qr-display-robot" />
           </div>
         )}
 
@@ -148,8 +148,8 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
             <div className="qr-display-confetti" aria-hidden="true">
               <i /><i /><i /><i /><i /><i />
             </div>
-            <RobotMascot className="qr-display-thanks-robot" />
-            <p className="qr-display-eyebrow">Registro confirmado</p>
+            <FarbotMascot className="qr-display-thanks-robot" />
+            <p className="qr-display-eyebrow">Farbot confirma tu registro</p>
             <h1>¡Gracias!</h1>
             <p>Tu asistencia quedó registrada.</p>
           </div>

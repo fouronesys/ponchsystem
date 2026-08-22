@@ -1,5 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Control de Asistencia">
-  <rect width="80" height="80" rx="18" fill="#34495e"/>
-  <path d="M40 14 61 22v17c0 14-9.1 23.9-21 28-11.9-4.1-21-14-21-28V22l21-8Z" fill="#eff6ff"/>
-  <path d="m29 40 7 7 15-16" fill="none" stroke="#34495e" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title description">
+  <title id="title">FarCheck RD</title>
+  <desc id="description">Farbot, el robot de asistencia de FarCheck RD</desc>
+  <defs>
+    <linearGradient id="face" x1="52" y1="74" x2="204" y2="186" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#367595"/>
+      <stop offset="1" stop-color="#245570"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="64" fill="#17324D"/>
+  <path d="M128 45V70M115 45H141" stroke="#F5B942" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="128" cy="27" r="13" fill="#F5B942"/>
+  <path d="M52 125H35M204 125H221" stroke="#2E6685" stroke-width="20" stroke-linecap="round"/>
+  <rect x="47" y="70" width="162" height="126" rx="51" fill="url(#face)"/>
+  <rect x="61" y="84" width="134" height="76" rx="34" fill="#DFF8FF"/>
+  <circle cx="97" cy="122" r="18" fill="#17324D"/>
+  <circle cx="159" cy="122" r="18" fill="#17324D"/>
+  <circle cx="103" cy="115" r="6" fill="#fff"/>
+  <circle cx="165" cy="115" r="6" fill="#fff"/>
+  <path d="M100 146C116 158 140 158 156 146" fill="none" stroke="#2E6685" stroke-width="8" stroke-linecap="round"/>
+  <rect x="92" y="174" width="72" height="34" rx="17" fill="#F5B942"/>
+  <path d="M110 191L121 201L146 181" fill="none" stroke="#17324D" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
