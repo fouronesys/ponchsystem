@@ -78,6 +78,9 @@ export interface QrDisplayLink {
   expiresAt: string;
 }
 
+/**
+ * Returned only while the protected display link is valid; invalid links return 404 without a token.
+ */
 export interface QrDisplayStatus {
   token: string;
   expiresAt: string;

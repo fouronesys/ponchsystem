@@ -22,7 +22,7 @@ import {
 } from "@workspace/db";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Response } from "express";
 import {
   type AuthenticatedRequest,
   requireAdministrator,
@@ -44,6 +44,15 @@ import {
 import { removeImage, saveImage } from "../lib/imageStorage";
 
 const router: IRouter = Router();
+
+function setQrDisplayNoCacheHeaders(res: Response): void {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    Pragma: "no-cache",
+    Expires: "0",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+  });
+}
 
 function bogotaDay(value: Date): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -121,7 +130,12 @@ async function issueNewToken(): Promise<{ token: AttendanceToken; rawToken: stri
       const [active] = await db
         .select()
         .from(attendanceTokensTable)
-        .where(eq(attendanceTokensTable.isActive, true))
+        .where(
+          and(
+            eq(attendanceTokensTable.isActive, true),
+            gt(attendanceTokensTable.expiresAt, new Date()),
+          ),
+        )
         .orderBy(desc(attendanceTokensTable.createdAt))
         .limit(1);
       if (active) {
@@ -366,12 +380,7 @@ router.delete(
 router.get(
   "/qr-display/:accessToken",
   async (req, res): Promise<void> => {
-    res.set({
-      "Cache-Control": "no-store, no-cache, must-revalidate, private",
-      Pragma: "no-cache",
-      Expires: "0",
-      "X-Robots-Tag": "noindex, nofollow, noarchive",
-    });
+    setQrDisplayNoCacheHeaders(res);
     const parsed = GetQrDisplayStatusParams.safeParse(req.params);
     if (!parsed.success) {
       res.status(404).json({ error: "Enlace de pantalla inválido, vencido o revocado." });

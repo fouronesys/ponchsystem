@@ -161,7 +161,7 @@ export const GetQrDisplayStatusResponse = zod.object({
   "expiresAt": zod.coerce.date(),
   "remainingSeconds": zod.number(),
   "scanSequence": zod.string().nullable()
-})
+}).describe('Returned only while the protected display link is valid; invalid links return 404 without a token.')
 
 
 /**

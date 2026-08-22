@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Returned only while the protected display link is valid; invalid links return 404 without a token.
+ */
 export interface QrDisplayStatus {
   token: string;
   expiresAt: Date;

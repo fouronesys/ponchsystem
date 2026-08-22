@@ -165,12 +165,26 @@ paths:
       responses:
         "200":
           description: QR display state
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoCache"
+            Pragma:
+              $ref: "#/components/headers/NoCachePragma"
+            Expires:
+              $ref: "#/components/headers/NoCacheExpires"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/QrDisplayStatus"
         "404":
           description: Invalid, expired, or revoked display link
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoCache"
+            Pragma:
+              $ref: "#/components/headers/NoCachePragma"
+            Expires:
+              $ref: "#/components/headers/NoCacheExpires"
   /admin/attendance:
     get:
       operationId: listAttendanceEvents
@@ -259,6 +273,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/Employee"
 components:
+  headers:
+    NoCache:
+      description: Prevents browsers and intermediary caches from retaining QR data.
+      schema:
+        type: string
+        example: no-store, no-cache, must-revalidate, private
+    NoCachePragma:
+      description: Legacy cache prevention header.
+      schema:
+        type: string
+        example: no-cache
+    NoCacheExpires:
+      description: Marks the response as already expired.
+      schema:
+        type: string
+        example: "0"
   schemas:
     HealthStatus:
       type: object
@@ -337,6 +367,7 @@ components:
       required: [accessToken, expiresAt]
     QrDisplayStatus:
       type: object
+      description: Returned only while the protected display link is valid; invalid links return 404 without a token.
       properties:
         token: { type: string }
         expiresAt: { type: string, format: date-time }
