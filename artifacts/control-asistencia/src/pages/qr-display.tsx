@@ -100,12 +100,12 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
         window.setTimeout(() => {
           setPhase("thanks");
           phaseRef.current = "thanks";
-        }, 1_150),
+        }, 3_450),
         window.setTimeout(() => {
           setVisibleQr(pendingQr.current);
           setPhase("ready");
           phaseRef.current = "ready";
-        }, 4_200),
+        }, 6_300),
       ];
       return;
     }
