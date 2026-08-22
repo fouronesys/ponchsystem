@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
-import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from "wouter";
+import { Redirect, Route, Switch, useLocation, useRoute, Router as WouterRouter } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminPage from "@/pages/admin";
 import EmployeePage from "@/pages/employee";
+import QrDisplayPage from "@/pages/qr-display";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 
@@ -98,6 +99,12 @@ function ProtectedAdmin() {
   return <Layout><AdminPage /></Layout>;
 }
 
+function QrDisplayRoute() {
+  const [, params] = useRoute("/qr-display/:accessToken");
+  if (!params?.accessToken) return <NotFound />;
+  return <QrDisplayPage accessToken={params.accessToken} />;
+}
+
 function Router() {
   const [location] = useLocation();
   return (
@@ -105,6 +112,7 @@ function Router() {
       <Switch>
         <Route path="/" component={HomeRoute} />
         <Route path="/admin" component={ProtectedAdmin} />
+        <Route path="/qr-display/:accessToken" component={QrDisplayRoute} />
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route component={NotFound} />
       </Switch>

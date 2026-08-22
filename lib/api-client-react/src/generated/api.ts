@@ -30,6 +30,8 @@ import type {
   HealthStatus,
   ListAttendanceEventsParams,
   LoginInput,
+  QrDisplayLink,
+  QrDisplayStatus,
   QrStatus,
   SessionResponse
 } from './api.schemas';
@@ -653,6 +655,225 @@ export const useRotateQrToken = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRotateQrTokenMutationOptions(options));
     }
+
+export const getCreateQrDisplayLinkUrl = () => {
+
+
+
+
+  return `/api/admin/qr/display-link`
+}
+
+/**
+ * @summary Create a protected link for the QR display
+ */
+export const createQrDisplayLink = async ( options?: Parameters<typeof customFetch>[1]): Promise<QrDisplayLink> => {
+
+  return customFetch<QrDisplayLink>(getCreateQrDisplayLinkUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateQrDisplayLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQrDisplayLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createQrDisplayLink>>, TError,void, TContext> => {
+
+const mutationKey = ['createQrDisplayLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createQrDisplayLink>>, void> = () => {
+
+
+          return  createQrDisplayLink(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateQrDisplayLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createQrDisplayLink>>>
+
+    export type CreateQrDisplayLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a protected link for the QR display
+ */
+export const useCreateQrDisplayLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQrDisplayLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createQrDisplayLink>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateQrDisplayLinkMutationOptions(options));
+    }
+
+export const getRevokeQrDisplayLinkUrl = () => {
+
+
+
+
+  return `/api/admin/qr/display-link`
+}
+
+/**
+ * @summary Revoke the active QR display link
+ */
+export const revokeQrDisplayLink = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRevokeQrDisplayLinkUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeQrDisplayLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeQrDisplayLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeQrDisplayLink>>, TError,void, TContext> => {
+
+const mutationKey = ['revokeQrDisplayLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeQrDisplayLink>>, void> = () => {
+
+
+          return  revokeQrDisplayLink(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeQrDisplayLinkMutationResult = NonNullable<Awaited<ReturnType<typeof revokeQrDisplayLink>>>
+
+    export type RevokeQrDisplayLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke the active QR display link
+ */
+export const useRevokeQrDisplayLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeQrDisplayLink>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeQrDisplayLink>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRevokeQrDisplayLinkMutationOptions(options));
+    }
+
+export const getGetQrDisplayStatusUrl = (accessToken: string,) => {
+
+
+
+
+  return `/api/qr-display/${accessToken}`
+}
+
+/**
+ * @summary Get the QR status for a protected display link
+ */
+export const getQrDisplayStatus = async (accessToken: string, options?: Parameters<typeof customFetch>[1]): Promise<QrDisplayStatus> => {
+
+  return customFetch<QrDisplayStatus>(getGetQrDisplayStatusUrl(accessToken),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQrDisplayStatusQueryKey = (accessToken: string,) => {
+    return [
+    `/api/qr-display/${accessToken}`
+    ] as const;
+    }
+
+
+export const getGetQrDisplayStatusQueryOptions = <TData = Awaited<ReturnType<typeof getQrDisplayStatus>>, TError = ErrorType<void>>(accessToken: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQrDisplayStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQrDisplayStatusQueryKey(accessToken);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQrDisplayStatus>>> = ({ signal }) => getQrDisplayStatus(accessToken, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accessToken !== null && accessToken !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQrDisplayStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQrDisplayStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getQrDisplayStatus>>>
+export type GetQrDisplayStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the QR status for a protected display link
+ */
+
+export function useGetQrDisplayStatus<TData = Awaited<ReturnType<typeof getQrDisplayStatus>>, TError = ErrorType<void>>(
+ accessToken: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQrDisplayStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQrDisplayStatusQueryOptions(accessToken,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListAttendanceEventsUrl = (params?: ListAttendanceEventsParams,) => {
   const normalizedParams = new URLSearchParams();

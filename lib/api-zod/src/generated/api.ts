@@ -130,6 +130,41 @@ export const RotateQrTokenResponse = zod.object({
 
 
 /**
+ * @summary Create a protected link for the QR display
+ */
+export const CreateQrDisplayLinkResponse = zod.object({
+  "accessToken": zod.string(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Revoke the active QR display link
+ */
+export const RevokeQrDisplayLinkResponse = zod.void()
+
+
+/**
+ * @summary Get the QR status for a protected display link
+ */
+export const getQrDisplayStatusPathAccessTokenMin = 40;
+export const getQrDisplayStatusPathAccessTokenMax = 256;
+
+
+
+export const GetQrDisplayStatusParams = zod.object({
+  "accessToken": zod.coerce.string().min(getQrDisplayStatusPathAccessTokenMin).max(getQrDisplayStatusPathAccessTokenMax)
+})
+
+export const GetQrDisplayStatusResponse = zod.object({
+  "token": zod.string(),
+  "expiresAt": zod.coerce.date(),
+  "remainingSeconds": zod.number(),
+  "scanSequence": zod.string().nullable()
+})
+
+
+/**
  * @summary List recent attendance events
  */
 export const ListAttendanceEventsQueryParams = zod.object({

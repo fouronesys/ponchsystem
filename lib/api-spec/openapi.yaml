@@ -130,6 +130,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/QrStatus"
+  /admin/qr/display-link:
+    post:
+      operationId: createQrDisplayLink
+      tags: [admin]
+      summary: Create a protected link for the QR display
+      responses:
+        "201":
+          description: New protected QR display link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrDisplayLink"
+    delete:
+      operationId: revokeQrDisplayLink
+      tags: [admin]
+      summary: Revoke the active QR display link
+      responses:
+        "204":
+          description: QR display link revoked
+  /qr-display/{accessToken}:
+    get:
+      operationId: getQrDisplayStatus
+      tags: [attendance]
+      summary: Get the QR status for a protected display link
+      parameters:
+        - in: path
+          name: accessToken
+          required: true
+          schema:
+            type: string
+            minLength: 40
+            maxLength: 256
+      responses:
+        "200":
+          description: QR display state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrDisplayStatus"
+        "404":
+          description: Invalid, expired, or revoked display link
   /admin/attendance:
     get:
       operationId: listAttendanceEvents
@@ -288,6 +329,20 @@ components:
         remainingSeconds:
           type: number
       required: [token, expiresAt, rotatedAt, remainingSeconds]
+    QrDisplayLink:
+      type: object
+      properties:
+        accessToken: { type: string }
+        expiresAt: { type: string, format: date-time }
+      required: [accessToken, expiresAt]
+    QrDisplayStatus:
+      type: object
+      properties:
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
+        remainingSeconds: { type: number }
+        scanSequence: { type: ["string", "null"] }
+      required: [token, expiresAt, remainingSeconds, scanSequence]
     AttendanceSummary:
       type: object
       properties:

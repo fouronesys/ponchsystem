@@ -1,4 +1,7 @@
 import {
+  CreateQrDisplayLinkResponse,
+  GetQrDisplayStatusParams,
+  GetQrDisplayStatusResponse,
   GetAttendanceSummaryResponse,
   GetQrStatusResponse,
   GetTodayAttendanceResponse,
@@ -13,6 +16,7 @@ import {
   attendanceTokensTable,
   db,
   employeesTable,
+  qrDisplayLinksTable,
   type AttendanceToken,
   type Employee,
 } from "@workspace/db";
@@ -27,9 +31,12 @@ import {
 import {
   canAttemptScan,
   clearScanAttempts,
+  createDisplayAccessToken,
   createRotatingToken,
   decryptToken,
+  displayLinkExpiry,
   encryptToken,
+  hashDisplayAccessToken,
   hashToken,
   secondsUntil,
   tokenExpiry,
@@ -300,6 +307,108 @@ router.post(
   async (_req, res): Promise<void> => {
     const qr = await issueNewToken();
     res.json(RotateQrTokenResponse.parse(tokenStatus(qr.token, qr.rawToken)));
+  },
+);
+
+router.post(
+  "/admin/qr/display-link",
+  requireAdministrator,
+  async (_req, res): Promise<void> => {
+    const now = new Date();
+    const accessToken = createDisplayAccessToken();
+    const expiresAt = displayLinkExpiry();
+
+    db.transaction((tx) => {
+      tx
+        .update(qrDisplayLinksTable)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            isNull(qrDisplayLinksTable.revokedAt),
+            gt(qrDisplayLinksTable.expiresAt, now),
+          ),
+        )
+        .run();
+      tx
+        .insert(qrDisplayLinksTable)
+        .values({
+          id: randomUUID(),
+          accessHash: hashDisplayAccessToken(accessToken),
+          expiresAt,
+        })
+        .run();
+    });
+
+    res.status(201).json(
+      CreateQrDisplayLinkResponse.parse({ accessToken, expiresAt }),
+    );
+  },
+);
+
+router.delete(
+  "/admin/qr/display-link",
+  requireAdministrator,
+  async (_req, res): Promise<void> => {
+    const now = new Date();
+    await db
+      .update(qrDisplayLinksTable)
+      .set({ revokedAt: now })
+      .where(
+        and(
+          isNull(qrDisplayLinksTable.revokedAt),
+          gt(qrDisplayLinksTable.expiresAt, now),
+        ),
+      );
+    res.status(204).end();
+  },
+);
+
+router.get(
+  "/qr-display/:accessToken",
+  async (req, res): Promise<void> => {
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, private",
+      Pragma: "no-cache",
+      Expires: "0",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+    });
+    const parsed = GetQrDisplayStatusParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(404).json({ error: "Enlace de pantalla inválido, vencido o revocado." });
+      return;
+    }
+
+    const now = new Date();
+    const [displayLink] = await db
+      .select({ id: qrDisplayLinksTable.id })
+      .from(qrDisplayLinksTable)
+      .where(
+        and(
+          eq(qrDisplayLinksTable.accessHash, hashDisplayAccessToken(parsed.data.accessToken)),
+          gt(qrDisplayLinksTable.expiresAt, now),
+          isNull(qrDisplayLinksTable.revokedAt),
+        ),
+      )
+      .limit(1);
+    if (!displayLink) {
+      res.status(404).json({ error: "Enlace de pantalla inválido, vencido o revocado." });
+      return;
+    }
+
+    const [latestScan] = await db
+      .select({ id: attendanceEventsTable.id })
+      .from(attendanceEventsTable)
+      .orderBy(desc(attendanceEventsTable.occurredAt))
+      .limit(1);
+    const qr = await currentToken();
+    res.json(
+      GetQrDisplayStatusResponse.parse({
+        token: qr.rawToken,
+        expiresAt: qr.token.expiresAt,
+        remainingSeconds: secondsUntil(qr.token.expiresAt),
+        scanSequence: latestScan?.id ?? null,
+      }),
+    );
   },
 );
 

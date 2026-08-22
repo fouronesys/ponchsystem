@@ -93,6 +93,23 @@ export const attendanceTokensTable = sqliteTable(
   ],
 );
 
+export const qrDisplayLinksTable = sqliteTable(
+  "qr_display_links",
+  {
+    id: text("id").primaryKey(),
+    accessHash: text("access_hash").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("qr_display_links_access_hash_unique").on(table.accessHash),
+    index("qr_display_links_expiry_idx").on(table.expiresAt),
+  ],
+);
+
 export const attendanceEventsTable = sqliteTable(
   "attendance_events",
   {
@@ -133,6 +150,7 @@ export const insertAttendanceEventSchema = createInsertSchema(
 export type Employee = typeof employeesTable.$inferSelect;
 export type AuthSession = typeof authSessionsTable.$inferSelect;
 export type AttendanceToken = typeof attendanceTokensTable.$inferSelect;
+export type QrDisplayLink = typeof qrDisplayLinksTable.$inferSelect;
 export type AttendanceEvent = typeof attendanceEventsTable.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type InsertAttendanceToken = z.infer<typeof insertAttendanceTokenSchema>;

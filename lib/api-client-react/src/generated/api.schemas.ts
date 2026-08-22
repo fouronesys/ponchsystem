@@ -73,6 +73,19 @@ export interface QrStatus {
   remainingSeconds: number;
 }
 
+export interface QrDisplayLink {
+  accessToken: string;
+  expiresAt: string;
+}
+
+export interface QrDisplayStatus {
+  token: string;
+  expiresAt: string;
+  remainingSeconds: number;
+  /** @nullable */
+  scanSequence: string | null;
+}
+
 export interface AttendanceSummary {
   present: number;
   expected: number;

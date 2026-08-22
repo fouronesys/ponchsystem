@@ -140,6 +140,18 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS attendance_tokens_validation_idx
     ON attendance_tokens (token_hash, is_active, expires_at);
 
+  CREATE TABLE IF NOT EXISTS qr_display_links (
+    id TEXT PRIMARY KEY NOT NULL,
+    access_hash TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    revoked_at INTEGER,
+    created_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS qr_display_links_access_hash_unique
+    ON qr_display_links (access_hash);
+  CREATE INDEX IF NOT EXISTS qr_display_links_expiry_idx
+    ON qr_display_links (expires_at);
+
   CREATE TABLE IF NOT EXISTS attendance_events (
     id TEXT PRIMARY KEY NOT NULL,
     employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,

@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { 
-  useGetQrStatus, 
+import {
   useRotateQrToken,
   useGetAttendanceSummary,
   useListAttendanceEvents,
-  getGetQrStatusQueryKey,
   getGetAttendanceSummaryQueryKey,
   getListAttendanceEventsQueryKey
 } from "@workspace/api-client-react";
@@ -15,35 +13,62 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { QRCodeSVG } from "qrcode.react";
 import { formatTime, formatDateTime } from "@/lib/utils";
-import { Users, UserCheck, Clock, UserMinus, RotateCw, QrCode, LogIn, LogOut, MonitorSmartphone } from "lucide-react";
+import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone } from "lucide-react";
 import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
 import { apiFetch, imageToDataUrl } from "@/lib/api";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function AdminPage() {
   const queryClient = useQueryClient();
+  const [displayUrl, setDisplayUrl] = useState("");
+  const [displayExpiresAt, setDisplayExpiresAt] = useState("");
+  const [displayBusy, setDisplayBusy] = useState(false);
+  const [displayError, setDisplayError] = useState("");
   
   // Dashboard data queries
   const { data: summary, isLoading: isLoadingSummary } = useGetAttendanceSummary();
   const { data: events, isLoading: isLoadingEvents } = useListAttendanceEvents();
   
-  // QR status with aggressive polling since it's time-sensitive
-  const { data: qrStatus, isLoading: isLoadingQr } = useGetQrStatus({
-    query: {
-      queryKey: getGetQrStatusQueryKey(),
-      refetchInterval: 1000,
+  const rotateToken = useRotateQrToken();
+
+  const copyDisplayUrl = async (url: string) => {
+    if (!navigator.clipboard) throw new Error("No fue posible acceder al portapapeles.");
+    await navigator.clipboard.writeText(url);
+  };
+
+  const createDisplayLink = async () => {
+    setDisplayBusy(true);
+    setDisplayError("");
+    try {
+      const link = await apiFetch<{ accessToken: string; expiresAt: string }>("/admin/qr/display-link", {
+        method: "POST",
+      });
+      const url = new URL(`${basePath}/qr-display/${link.accessToken}`, window.location.origin).toString();
+      setDisplayUrl(url);
+      setDisplayExpiresAt(link.expiresAt);
+      await copyDisplayUrl(url);
+    } catch (reason) {
+      setDisplayError(reason instanceof Error ? reason.message : "No pudimos crear el enlace de pantalla.");
+    } finally {
+      setDisplayBusy(false);
     }
-  });
-  
-  const rotateToken = useRotateQrToken({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetQrStatusQueryKey() });
-      }
+  };
+
+  const revokeDisplayLink = async () => {
+    setDisplayBusy(true);
+    setDisplayError("");
+    try {
+      await apiFetch<void>("/admin/qr/display-link", { method: "DELETE" });
+      setDisplayUrl("");
+      setDisplayExpiresAt("");
+    } catch (reason) {
+      setDisplayError(reason instanceof Error ? reason.message : "No pudimos revocar el enlace.");
+    } finally {
+      setDisplayBusy(false);
     }
-  });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -79,53 +104,48 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Active QR Panel */}
+        {/* QR display controls */}
         <Card className="lg:col-span-1 shadow-md border-t-4 border-t-primary h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <QrCode className="w-5 h-5 text-primary" />
-              Token de Acceso
+              <Link2 className="w-5 h-5 text-primary" />
+              Pantalla QR
             </CardTitle>
             <CardDescription>
-              Código rotativo para terminales
+              Abre el código rotativo en una terminal dedicada.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoadingQr || !qrStatus ? (
-              <div className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-2 w-full" />
+            <Button className="w-full" onClick={() => void createDisplayLink()} disabled={displayBusy}>
+              <Copy className="mr-2 h-4 w-4" />
+              {displayBusy ? "Preparando enlace…" : "Crear y copiar enlace"}
+            </Button>
+            {displayUrl && (
+              <div className="space-y-3 rounded-xl border bg-secondary/30 p-3">
+                <Input value={displayUrl} readOnly aria-label="Enlace de la pantalla QR" onFocus={(event) => event.currentTarget.select()} />
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => void copyDisplayUrl(displayUrl)}>
+                    <Copy className="mr-2 h-3.5 w-3.5" />Copiar
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={displayUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-2 h-3.5 w-3.5" />Abrir
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Vence {formatDateTime(displayExpiresAt)}. Crear otro enlace revoca este.</p>
               </div>
-            ) : (
-              <>
-                <div className="bg-secondary/30 rounded-xl p-6 text-center border border-secondary">
-                  <div className="mx-auto mb-4 grid h-48 w-48 place-items-center rounded-lg bg-white p-3 shadow-sm">
-                    <QRCodeSVG value={qrStatus.token} size={168} level="H" includeMargin={false} />
-                  </div>
-                  <p className="text-xs font-mono text-muted-foreground">
-                    Token protegido · uso único
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Expira en</span>
-                    <span className="font-medium font-mono">{qrStatus.remainingSeconds}s</span>
-                  </div>
-                  <Progress value={(qrStatus.remainingSeconds / 90) * 100} className="h-1.5" />
-                </div>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => rotateToken.mutate()}
-                  disabled={rotateToken.isPending}
-                >
-                  <RotateCw className={`w-4 h-4 mr-2 ${rotateToken.isPending ? 'animate-spin' : ''}`} />
-                  Rotar manualmente
-                </Button>
-              </>
             )}
+            <Button variant="outline" className="w-full" onClick={() => rotateToken.mutate()} disabled={rotateToken.isPending}>
+              <RotateCw className={`mr-2 h-4 w-4 ${rotateToken.isPending ? 'animate-spin' : ''}`} />
+              Rotar QR manualmente
+            </Button>
+            {displayUrl && (
+              <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => void revokeDisplayLink()} disabled={displayBusy}>
+                <ShieldOff className="mr-2 h-4 w-4" />Revocar enlace de pantalla
+              </Button>
+            )}
+            {displayError && <p className="text-sm text-destructive">{displayError}</p>}
           </CardContent>
         </Card>
 

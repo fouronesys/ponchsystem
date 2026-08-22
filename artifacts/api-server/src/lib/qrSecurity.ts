@@ -7,6 +7,7 @@ import {
 } from "node:crypto";
 
 const TOKEN_TTL_MS = 90_000;
+const DISPLAY_LINK_TTL_MS = 8 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 6;
 const ATTEMPT_WINDOW_MS = 5 * 60_000;
 
@@ -25,12 +26,28 @@ export function createRotatingToken(): string {
   return `att_${randomUUID()}_${randomBytes(32).toString("base64url")}`;
 }
 
+export function createDisplayAccessToken(): string {
+  return `display_${randomUUID()}_${randomBytes(24).toString("base64url")}`;
+}
+
+export function displayLinkExpiry(): Date {
+  return new Date(Date.now() + DISPLAY_LINK_TTL_MS);
+}
+
 export function hashToken(token: string): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET is required for QR token hashing");
   }
   return createHmac("sha256", secret).update(token).digest("hex");
+}
+
+export function hashDisplayAccessToken(token: string): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET is required for QR display links");
+  }
+  return createHmac("sha256", secret).update("attendance-display-link-key").update(token).digest("hex");
 }
 
 export function encryptToken(token: string): string {

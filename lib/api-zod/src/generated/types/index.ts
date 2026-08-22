@@ -19,6 +19,8 @@ export * from './employeeUpdateInput';
 export * from './healthStatus';
 export * from './listAttendanceEventsParams';
 export * from './loginInput';
+export * from './qrDisplayLink';
+export * from './qrDisplayStatus';
 export * from './qrStatus';
 export * from './sessionEmployee';
 export * from './sessionEmployeeRole';
