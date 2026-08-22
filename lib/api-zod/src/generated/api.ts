@@ -196,7 +196,7 @@ export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
  */
 export const createEmployeeBodyUsernameMax = 80;
 
-export const createEmployeeBodyPasswordMin = 12;
+export const createEmployeeBodyPasswordMin = 8;
 export const createEmployeeBodyPasswordMax = 256;
 
 export const createEmployeeBodyDisplayNameMax = 160;
@@ -248,7 +248,7 @@ export const UpdateEmployeeParams = zod.object({
 
 export const updateEmployeeBodyDisplayNameMax = 160;
 
-export const updateEmployeeBodyPasswordMin = 12;
+export const updateEmployeeBodyPasswordMin = 8;
 export const updateEmployeeBodyPasswordMax = 256;
 
 export const updateEmployeeBodyProfilePhotoMax = 3000000;

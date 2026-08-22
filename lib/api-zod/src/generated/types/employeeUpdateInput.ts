@@ -21,7 +21,7 @@ export interface EmployeeUpdateInput {
   /** @nullable */
   jobTitle?: string | null;
   /**
-     * @minLength 12
+     * @minLength 8
      * @maxLength 256
      */
   password?: string;

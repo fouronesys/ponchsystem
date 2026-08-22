@@ -341,7 +341,7 @@ components:
       type: object
       properties:
         username: { type: string, minLength: 1, maxLength: 80 }
-        password: { type: string, minLength: 12, maxLength: 256 }
+        password: { type: string, minLength: 8, maxLength: 256 }
         displayName: { type: string, minLength: 1, maxLength: 160 }
         documentNumber: { type: string, maxLength: 80 }
         email: { type: string, maxLength: 160 }
@@ -357,7 +357,7 @@ components:
         email: { type: ["string", "null"] }
         phone: { type: ["string", "null"] }
         jobTitle: { type: ["string", "null"] }
-        password: { type: string, minLength: 12, maxLength: 256 }
+        password: { type: string, minLength: 8, maxLength: 256 }
         profilePhoto: { type: string, maxLength: 3000000 }
         active: { type: boolean }
 

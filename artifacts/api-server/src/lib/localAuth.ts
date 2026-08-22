@@ -11,6 +11,7 @@ import type { Logger } from "pino";
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const PASSWORD_KEY_LENGTH = 64;
+export const MIN_PASSWORD_LENGTH = 8;
 const failedAttempts = new Map<string, { count: number; resetAt: number }>();
 
 export function normalizeUsername(value: string): string {
@@ -34,6 +35,10 @@ export function verifyPassword(password: string, stored: string): boolean {
   const expected = Buffer.from(hashEncoded, "base64url");
   const actual = scryptSync(password, salt, expected.length);
   return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+export function isValidPassword(password: string): boolean {
+  return password.length >= MIN_PASSWORD_LENGTH;
 }
 
 export function getClientIp(headers: Record<string, unknown>, fallback?: string): string {
@@ -114,9 +119,9 @@ export async function bootstrapAdministrator(logger: Logger) {
   const username = normalizeUsername(process.env.INITIAL_ADMIN_USERNAME ?? "");
   const password = process.env.INITIAL_ADMIN_PASSWORD ?? "";
   const displayName = process.env.INITIAL_ADMIN_NAME?.trim() || "Administrador";
-  if (!username || password.length < 12) {
+  if (!username || !isValidPassword(password)) {
     logger.warn(
-      "No initial administrator exists. Set INITIAL_ADMIN_USERNAME and a 12+ character INITIAL_ADMIN_PASSWORD before production use.",
+      "No initial administrator exists. Set INITIAL_ADMIN_USERNAME and an INITIAL_ADMIN_PASSWORD with at least 8 characters before production use.",
     );
     return;
   }

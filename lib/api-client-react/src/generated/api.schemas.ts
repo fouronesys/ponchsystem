@@ -151,7 +151,7 @@ export interface EmployeeCreateInput {
      */
   username: string;
   /**
-     * @minLength 12
+     * @minLength 8
      * @maxLength 256
      */
   password: string;
@@ -187,7 +187,7 @@ export interface EmployeeUpdateInput {
   /** @nullable */
   jobTitle?: string | null;
   /**
-     * @minLength 12
+     * @minLength 8
      * @maxLength 256
      */
   password?: string;

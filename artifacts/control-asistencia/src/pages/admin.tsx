@@ -292,12 +292,12 @@ function EmployeeManager() {
     <section className="space-y-5">
       <div><h2 className="text-2xl font-semibold tracking-tight">Personal y credenciales</h2><p className="text-sm text-muted-foreground">Crea accesos locales y conserva la evidencia incluso cuando una cuenta se desactiva.</p></div>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" />Nuevo empleado</CardTitle><CardDescription>La contraseña inicial debe tener al menos 12 caracteres.</CardDescription></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" />Nuevo empleado</CardTitle><CardDescription>La contraseña inicial debe tener al menos 8 caracteres.</CardDescription></CardHeader>
         <CardContent>
           <form onSubmit={create} className="grid gap-3 md:grid-cols-2">
             <Input required name="displayName" placeholder="Nombre completo" />
             <Input required name="username" placeholder="Usuario de acceso" autoComplete="off" />
-            <Input required name="password" type="password" minLength={12} placeholder="Contraseña temporal (12+)" autoComplete="new-password" />
+            <Input required name="password" type="password" minLength={8} placeholder="Contraseña temporal (8+)" autoComplete="new-password" />
             <Input name="documentNumber" placeholder="Documento (opcional)" />
             <Input name="email" type="email" placeholder="Correo (opcional)" />
             <Input name="phone" placeholder="Teléfono (opcional)" />

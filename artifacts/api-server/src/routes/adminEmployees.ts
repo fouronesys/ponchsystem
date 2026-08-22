@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import { saveImage } from "../lib/imageStorage";
-import { hashPassword, normalizeUsername } from "../lib/localAuth";
+import { hashPassword, isValidPassword, MIN_PASSWORD_LENGTH, normalizeUsername } from "../lib/localAuth";
 import { requireAdministrator } from "../middlewares/attendanceAuth";
 
 const router: IRouter = Router();
@@ -37,8 +37,10 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
   const username = normalizeUsername(typeof req.body?.username === "string" ? req.body.username : "");
   const password = typeof req.body?.password === "string" ? req.body.password : "";
   const displayName = optionalText(req.body?.displayName);
-  if (!username || !displayName || password.length < 12) {
-    res.status(400).json({ error: "Nombre, usuario y una contraseña de al menos 12 caracteres son obligatorios." });
+  if (!username || !displayName || !isValidPassword(password)) {
+    res.status(400).json({
+      error: `Nombre, usuario y una contraseña de al menos ${MIN_PASSWORD_LENGTH} caracteres son obligatorios.`,
+    });
     return;
   }
 
@@ -90,8 +92,10 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
       if (field in (req.body ?? {})) values[field] = optionalText(req.body[field]);
     }
     if (typeof req.body?.password === "string" && req.body.password) {
-      if (req.body.password.length < 12) {
-        res.status(400).json({ error: "La contraseña debe tener al menos 12 caracteres." });
+      if (!isValidPassword(req.body.password)) {
+        res.status(400).json({
+          error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
+        });
         return;
       }
       values.passwordHash = hashPassword(req.body.password);

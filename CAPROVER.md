@@ -28,7 +28,7 @@ Configura estas variables en **App Configs > Environmental Variables**:
 | --- | --- | --- |
 | `SESSION_SECRET` | Sí | Cifrado y firma de tokens QR |
 | `INITIAL_ADMIN_USERNAME` | Solo primer arranque | Usuario del primer administrador local |
-| `INITIAL_ADMIN_PASSWORD` | Solo primer arranque | Contraseña de al menos 12 caracteres del primer administrador |
+| `INITIAL_ADMIN_PASSWORD` | Solo primer arranque | Contraseña de al menos 8 caracteres del primer administrador |
 | `INITIAL_ADMIN_NAME` | No | Nombre visible del primer administrador |
 | `LOG_LEVEL` | No | Por defecto `info` |
 | `SQLITE_DATABASE_PATH` | No | Por defecto `/app/data/attendance.sqlite` |
