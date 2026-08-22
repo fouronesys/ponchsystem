@@ -90,15 +90,20 @@ async function issueNewToken(): Promise<{ token: AttendanceToken; rawToken: stri
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const next = newTokenValues();
     try {
-      const token = await db.transaction(async (tx) => {
-        await tx
+      const token = db.transaction((tx) => {
+        tx
           .update(attendanceTokensTable)
           .set({ isActive: false })
-          .where(eq(attendanceTokensTable.isActive, true));
-        const [created] = await tx
+          .where(eq(attendanceTokensTable.isActive, true))
+          .run();
+        const created = tx
           .insert(attendanceTokensTable)
           .values(next.values)
-          .returning();
+          .returning()
+          .get();
+        if (!created) {
+          throw new Error("Unable to create rotating QR token");
+        }
         return created;
       });
       return { token, rawToken: next.rawToken };
@@ -202,8 +207,8 @@ router.post(
     const now = new Date();
     const tokenHash = hashToken(parsed.data.token);
 
-    const event = await db.transaction(async (tx) => {
-      const [consumed] = await tx
+    const event = db.transaction((tx) => {
+      const consumed = tx
         .update(attendanceTokensTable)
         .set({ usedAt: now, isActive: false })
         .where(
@@ -214,23 +219,25 @@ router.post(
             gt(attendanceTokensTable.expiresAt, now),
           ),
         )
-        .returning();
+        .returning()
+        .get();
 
       if (!consumed) {
         return null;
       }
 
-      const events = await tx
+      const events = tx
         .select()
         .from(attendanceEventsTable)
         .where(eq(attendanceEventsTable.employeeId, employee.id))
         .orderBy(desc(attendanceEventsTable.occurredAt))
-        .limit(50);
+        .limit(50)
+        .all();
       const today = bogotaDay(now);
       const todayLatest = events.find(
         (item) => bogotaDay(item.occurredAt) === today,
       );
-      const [created] = await tx
+      const created = tx
         .insert(attendanceEventsTable)
         .values({
           id: randomUUID(),
@@ -240,10 +247,14 @@ router.post(
           location: null,
           deviceLabel: null,
         })
-        .returning();
+        .returning()
+        .get();
+      if (!created) {
+        throw new Error("Unable to create attendance event");
+      }
 
       const next = newTokenValues();
-      await tx.insert(attendanceTokensTable).values(next.values);
+      tx.insert(attendanceTokensTable).values(next.values).run();
       return created;
     });
 

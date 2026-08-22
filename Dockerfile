@@ -22,13 +22,20 @@ FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=80 \
-    FRONTEND_DIST_DIR=/app/public
+    FRONTEND_DIST_DIR=/app/public \
+    SQLITE_DATABASE_PATH=/app/data/attendance.sqlite
 
 COPY --chown=node:node --from=build /app/artifacts/api-server/dist ./dist
 COPY --chown=node:node --from=build /app/artifacts/control-asistencia/dist/public ./public
+COPY --chown=node:node --from=build /app/node_modules ./node_modules
+COPY --chown=node:node --from=build /app/lib/db/node_modules ./lib/db/node_modules
 COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+RUN mkdir -p ./data && \
+    ln -s ../lib/db/node_modules/better-sqlite3 ./node_modules/better-sqlite3 && \
+    chown node:node ./data && \
+    chmod +x ./docker-entrypoint.sh
 
 EXPOSE 80
+VOLUME ["/app/data"]
 USER node
 CMD ["./docker-entrypoint.sh"]

@@ -9,13 +9,14 @@ Sistema web seguro para registrar entradas y salidas de empleados mediante QR ro
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- SQLite uses `data/attendance.sqlite` by default; set `SQLITE_DATABASE_PATH` to override it.
 
 ## CapRover
 
 - `docker build -t control-asistencia .`
 - `captain-definition` y `Dockerfile` despliegan el frontend y API en un solo contenedor.
-- Variables runtime requeridas: `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET` y `ADMIN_CLERK_USER_IDS`.
+- Variables runtime requeridas: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET` y `ADMIN_CLERK_USER_IDS`.
+- En CapRover, monta `/app/data` como directorio persistente para conservar SQLite.
 - Consulta `CAPROVER.md` para el health check, Clerk, PostgreSQL y configuración del administrador.
 
 ## Stack
