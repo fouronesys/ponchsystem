@@ -13,7 +13,7 @@ Sistema web seguro para registrar entradas y salidas de empleados mediante QR ro
 
 ## CapRover
 
-- `docker build --build-arg VITE_CLERK_PUBLISHABLE_KEY=... -t control-asistencia .`
+- `docker build -t control-asistencia .`
 - `captain-definition` y `Dockerfile` despliegan el frontend y API en un solo contenedor.
 - Variables runtime requeridas: `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET` y `ADMIN_CLERK_USER_IDS`.
 - Consulta `CAPROVER.md` para el health check, Clerk, PostgreSQL y configuración del administrador.
