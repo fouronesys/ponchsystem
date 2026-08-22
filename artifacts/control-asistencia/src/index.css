@@ -364,7 +364,7 @@
 .qr-paper {
   position: absolute;
   left: 50%;
-  top: 62%;
+  top: 55%;
   z-index: 4;
   display: grid;
   width: clamp(128px, 19vw, 178px);
@@ -583,8 +583,9 @@
 }
 
 @keyframes qr-nibble {
-  0%, 42% { transform: scale(1); opacity: 1; }
-  66% { transform: scale(.8) translateX(-8%); opacity: .88; }
+  0%, 18% { transform: scale(1); opacity: 1; }
+  42% { transform: scale(.92); opacity: .5; }
+  66% { transform: scale(.72) translateX(-8%); opacity: .18; }
   100% { transform: scale(.18) translateX(-140%); opacity: 0; }
 }
 

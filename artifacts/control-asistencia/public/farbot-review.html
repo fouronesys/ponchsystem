@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Farbot review</title>
+  <link rel="stylesheet" href="/src/index.css">
+  <style>
+    .review-qr { width:100%; height:100%; background: repeating-conic-gradient(#071725 0 25%,#fff 0 50%) 50%/16% 16%; }
+    .review-paper-qr { width:100%; height:100%; padding:9%; border:3px solid #071725; background: repeating-conic-gradient(#071725 0 25%,#fff 0 50%) 50%/16% 16%; }
+    .review-paper-label { position:absolute; bottom:4px; left:0; right:0; text-align:center; color:#17324d; font:900 9px system-ui; letter-spacing:.16em; }
+    .review-thanks { display:none; position:absolute; inset:0; z-index:8; place-items:center; border-radius:42px; color:#ecfeff; text-align:center; background:linear-gradient(145deg,#0e4963,#17324d); }
+    .review-thanks.show { display:grid; }
+    .review-thanks h1 { margin:.3rem 0; font:700 clamp(3rem,8vw,6rem) system-ui; }
+    .review-thanks p { margin:0; font:1.2rem system-ui; }
+    .review-thanks small { color:#8ee8e0; font:900 .8rem system-ui; letter-spacing:.18em; text-transform:uppercase; }
+  </style>
+</head>
+<body>
+<main class="qr-display-shell">
+  <div class="qr-display-stage qr-display-stage--eating">
+    <div class="qr-display-code"><div class="review-qr"></div></div>
+    <div class="qr-display-eating">
+      <div class="qr-paper"><div class="review-paper-qr"></div><span class="review-paper-label">ASISTENCIA</span></div>
+      <div class="qr-paper-edge"></div><div class="qr-suction"></div>
+      <div class="qr-crumb qr-crumb--one"></div><div class="qr-crumb qr-crumb--two"></div><div class="qr-crumb qr-crumb--three"></div>
+      <div class="qr-display-robot-wrap">
+        <div class="farbot-3d qr-display-robot">
+          <div class="farbot-antenna"><span></span></div><div class="farbot-shadow"></div>
+          <div class="farbot-body"><div class="farbot-face"><span class="farbot-eye farbot-eye--left"></span><span class="farbot-eye farbot-eye--right"></span><div class="farbot-mouth"><span class="farbot-tongue"></span></div></div><div class="farbot-belly"></div><div class="farbot-bumper"></div></div>
+          <div class="farbot-arm farbot-arm--left"></div><div class="farbot-arm farbot-arm--right"></div>
+        </div>
+      </div>
+    </div>
+    <div class="review-thanks"><div><small>Farbot confirma tu registro</small><h1>¡Gracias!</h1><p>Tu asistencia quedó registrada.</p></div></div>
+  </div>
+</main>
+<script>
+  const frame = Number(new URLSearchParams(location.search).get("frame") || "0");
+  document.documentElement.style.setProperty("--review-seek", `${-Math.max(0, frame)}s`);
+  document.querySelectorAll(".qr-display-eating *, .qr-display-stage--eating .qr-display-code").forEach((el) => {
+    el.style.animationDelay = "var(--review-seek)";
+  });
+  if (frame >= 3.45) document.querySelector(".review-thanks").classList.add("show");
+</script>
+</body>
+</html>
