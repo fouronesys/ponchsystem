@@ -26,7 +26,8 @@ function FarbotMascot({ className = "" }: { className?: string }) {
       <circle cx="149" cy="111" r="16" fill="#DFF8FF" />
       <circle cx="94" cy="113" r="7" fill="#17324D" />
       <circle cx="146" cy="113" r="7" fill="#17324D" />
-      <path d="M91 143C109 158 132 158 150 143" stroke="#DFF8FF" strokeWidth="8" strokeLinecap="round" />
+      <path className="farbot-mouth" d="M87 143C105 157 135 157 153 143C150 169 137 181 120 181C103 181 90 169 87 143Z" fill="#071725" />
+      <path className="farbot-tongue" d="M104 168C113 162 127 162 136 168C132 177 108 177 104 168Z" fill="#F27D7D" />
       <rect x="82" y="176" width="76" height="28" rx="14" fill="#F5B942" />
       <path d="M68 176L39 201M172 176L201 201" stroke="#17324D" strokeWidth="18" strokeLinecap="round" />
       <path d="M73 196L48 214M167 196L192 214" stroke="#2E6685" strokeWidth="18" strokeLinecap="round" />
@@ -145,7 +146,15 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
         </div>
 
         {phase === "eating" && (
-          <div className="qr-display-eating" aria-label="Registro confirmado">
+          <div className="qr-display-eating" aria-label="Farbot está consumiendo el código QR">
+            <div className="qr-paper" aria-hidden="true">
+              <QRCodeSVG value={qrValue} size={220} level="H" includeMargin className="qr-paper-svg" />
+              <span className="qr-paper-label">ASISTENCIA</span>
+            </div>
+            <div className="qr-suction" aria-hidden="true" />
+            <div className="qr-crumb qr-crumb--one" aria-hidden="true" />
+            <div className="qr-crumb qr-crumb--two" aria-hidden="true" />
+            <div className="qr-crumb qr-crumb--three" aria-hidden="true" />
             <FarbotMascot className="qr-display-robot" />
           </div>
         )}
