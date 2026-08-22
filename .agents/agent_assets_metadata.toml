@@ -1,0 +1,72 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "109eqfUmKSUN4qdA-WHaf"
+uri = "file://screenshots/farbot-3d-01-entrada.jpg"
+type = "image"
+title = "Farbot 3D — entrada"
+description = "Primer fotograma: el robot entra y la hoja QR aparece en escena."
+logical_id = "4654f2ad-aa4e-4042-901b-aeab7a1a895a"
+content_hash = "sha256:1569b574fd5a24826e5c5ff7178ce0ddf119561861a094b0f8a4cb1078c1a731"
+size = 58912
+mtime_ms = 1787432091360
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ac5e1cba-7c8f-402c-8d1f-8b2e472e9383/4654f2ad-aa4e-4042-901b-aeab7a1a895a/97e53b55-2321-43ff-8fe1-0918e271080e"
+storage_version_token = "1787432167185557"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "zMSIBYiuQu9ASk-1IWqrF"
+uri = "file://screenshots/farbot-3d-02-aproximacion.jpg"
+type = "image"
+title = "Farbot 3D — aproximación"
+description = "Segundo fotograma: Farbot se acerca a la hoja QR."
+logical_id = "4543d54d-d5c7-4804-9e84-7aa0633e5d42"
+content_hash = "sha256:ba844607707c55c7c8faf4acad34a49fa6dee22929c3060bb9e18c1c0a9d6c6d"
+size = 49436
+mtime_ms = 1787432093304
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ac5e1cba-7c8f-402c-8d1f-8b2e472e9383/4543d54d-d5c7-4804-9e84-7aa0633e5d42/5006248f-503e-43d0-99c9-d1d19c2958e2"
+storage_version_token = "1787432167810183"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "as8UUIy-oFOJZMxEjpt4x"
+uri = "file://screenshots/farbot-3d-03-contacto.jpg"
+type = "image"
+title = "Farbot 3D — contacto"
+description = "Tercer fotograma: la hoja llega a la boca y comienza la absorción."
+logical_id = "39fc0c46-caa0-4721-97d9-552b70383204"
+content_hash = "sha256:f18a556f0930900bd798c3efde330696df46a035ae4fdfd8b3e5587674f81061"
+size = 37246
+mtime_ms = 1787432095056
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ac5e1cba-7c8f-402c-8d1f-8b2e472e9383/39fc0c46-caa0-4721-97d9-552b70383204/1f21e527-f482-431e-b9dd-6744cf8670b6"
+storage_version_token = "1787432168502750"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "GkcACs88N2YmEHr_b9qbx"
+uri = "file://screenshots/farbot-3d-04-masticando.jpg"
+type = "image"
+title = "Farbot 3D — masticación"
+description = "Cuarto fotograma: Farbot termina de consumir el QR."
+logical_id = "635376d6-e392-4ddd-b7e0-02600275455b"
+content_hash = "sha256:c7ce9b38a8f1fb449d250a62c5123bff70bb2b6163084cee6aae0d428e73dbda"
+size = 31139
+mtime_ms = 1787432096808
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ac5e1cba-7c8f-402c-8d1f-8b2e472e9383/635376d6-e392-4ddd-b7e0-02600275455b/4af347f7-c7fe-4bad-8436-9e0ebf169ccb"
+storage_version_token = "1787432169115914"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "WdUcobQr5dkkEpBXTiXBv"
+uri = "file://screenshots/farbot-3d-05-celebracion.jpg"
+type = "image"
+title = "Farbot 3D — celebración"
+description = "Fotograma final: Farbot confirma el registro."
+logical_id = "7969ff9d-37f0-49cc-9f39-cc057a61dd00"
+content_hash = "sha256:91e3761de0e0d210a4836204dddbece38e91f68992f987d3101f11bd677e623f"
+size = 24397
+mtime_ms = 1787432098392
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ac5e1cba-7c8f-402c-8d1f-8b2e472e9383/7969ff9d-37f0-49cc-9f39-cc057a61dd00/19ca5c2b-3655-4e6e-b700-9fc20622a3b3"
+storage_version_token = "1787432169921179"
+content_type = "image/jpeg"
