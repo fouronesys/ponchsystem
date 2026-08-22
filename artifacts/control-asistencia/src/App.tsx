@@ -50,7 +50,7 @@ function SignInPage() {
     try {
       const employee = await login(username, password);
       const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo");
-      const returnTo = requestedReturnTo?.startsWith(`${basePath}/attendance/`) ? requestedReturnTo : null;
+      const returnTo = requestedReturnTo?.startsWith("/attendance/") ? requestedReturnTo : null;
       setLocation(employee.role === "admin" ? "/admin" : returnTo ?? "/");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No fue posible iniciar sesión.");

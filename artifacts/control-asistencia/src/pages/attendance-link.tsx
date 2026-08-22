@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CheckCircle2, Loader2, LogIn, ShieldCheck } from "lucide-react";
-import { useGetTodayAttendance } from "@workspace/api-client-react";
+import { getGetTodayAttendanceQueryKey, useGetTodayAttendance } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SelfieCapture } from "@/components/selfie-capture";
@@ -10,14 +10,17 @@ import { apiFetch } from "@/lib/api";
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function signInUrl(token: string): string {
-  const returnTo = `${basePath}/attendance/${encodeURIComponent(token)}`;
+  const returnTo = `/attendance/${encodeURIComponent(token)}`;
   return `${basePath}/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 export default function AttendanceLinkPage({ token }: { token: string }) {
   const { employee, ready } = useAuth();
   const { data: attendance, isLoading: attendanceLoading } = useGetTodayAttendance({
-    query: { enabled: ready && employee?.role === "employee" },
+    query: {
+      queryKey: getGetTodayAttendanceQueryKey(),
+      enabled: ready && employee?.role === "employee",
+    },
   });
   const [selfie, setSelfie] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

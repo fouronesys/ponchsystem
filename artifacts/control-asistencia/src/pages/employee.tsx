@@ -1,16 +1,12 @@
-import { useGetTodayAttendance, getGetTodayAttendanceQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useGetTodayAttendance } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
 import { QrCode, LogIn, LogOut, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function EmployeePage() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
   const { data: attendance, isLoading, isError, refetch } = useGetTodayAttendance();
 
   if (isLoading) {
