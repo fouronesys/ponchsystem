@@ -37,5 +37,7 @@ RUN mkdir -p ./data && \
 
 EXPOSE 80
 VOLUME ["/app/data"]
-USER node
+# The CapRover volume is mounted after image creation and may be owned by root.
+# The entrypoint fixes its ownership before dropping privileges to node.
+USER root
 CMD ["./docker-entrypoint.sh"]
