@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: attendance
+    description: Employee attendance operations
+  - name: admin
+    description: Administrative attendance operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /attendance/today:
+    get:
+      operationId: getTodayAttendance
+      tags: [attendance]
+      summary: Get the current employee attendance state
+      responses:
+        "200":
+          description: Current attendance state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceStatus"
+  /attendance/scan:
+    post:
+      operationId: scanAttendanceQr
+      tags: [attendance]
+      summary: Consume a rotating QR token and record attendance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceScanInput"
+      responses:
+        "200":
+          description: Attendance recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceEvent"
+        "400":
+          description: Invalid, expired, or already-used token
+        "429":
+          description: Too many scan attempts
+  /admin/qr:
+    get:
+      operationId: getQrStatus
+      tags: [admin]
+      summary: Get the currently active QR token status
+      responses:
+        "200":
+          description: QR status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrStatus"
+  /admin/qr/rotate:
+    post:
+      operationId: rotateQrToken
+      tags: [admin]
+      summary: Rotate the active QR token
+      responses:
+        "200":
+          description: New QR status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrStatus"
+  /admin/attendance:
+    get:
+      operationId: listAttendanceEvents
+      tags: [admin]
+      summary: List recent attendance events
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Attendance events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceEvent"
+  /admin/summary:
+    get:
+      operationId: getAttendanceSummary
+      tags: [admin]
+      summary: Get attendance dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +128,69 @@ components:
           type: string
       required:
         - status
+    AttendanceScanInput:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 16
+          maxLength: 512
+      required: [token]
+    AttendanceEvent:
+      type: object
+      properties:
+        id: { type: string }
+        employeeId: { type: string }
+        employeeName: { type: string }
+        type:
+          type: string
+          enum: [check_in, check_out]
+        timestamp: { type: string, format: date-time }
+        location:
+          type: ["string", "null"]
+        deviceLabel:
+          type: ["string", "null"]
+      required: [id, employeeId, employeeName, type, timestamp, location, deviceLabel]
+    AttendanceStatus:
+      type: object
+      properties:
+        employeeId: { type: string }
+        employeeName: { type: string }
+        state:
+          type: string
+          enum: [out, checked_in, checked_out]
+        checkIn:
+          type: ["string", "null"]
+          format: date-time
+        checkOut:
+          type: ["string", "null"]
+          format: date-time
+        workedMinutes: { type: integer }
+      required: [employeeId, employeeName, state, checkIn, checkOut, workedMinutes]
+    QrStatus:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        rotatedAt:
+          type: string
+          format: date-time
+        remainingSeconds:
+          type: integer
+      required: [token, expiresAt, rotatedAt, remainingSeconds]
+    AttendanceSummary:
+      type: object
+      properties:
+        present: { type: integer }
+        expected: { type: integer }
+        late: { type: integer }
+        checkedOut: { type: integer }
+        lastEvent:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceEvent"
+            - type: "null"
+      required: [present, expected, late, checkedOut, lastEvent]
 

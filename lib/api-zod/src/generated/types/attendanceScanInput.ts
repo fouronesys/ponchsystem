@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface AttendanceScanInput {
+  /**
+     * @minLength 16
+     * @maxLength 512
+     */
+  token: string;
 }

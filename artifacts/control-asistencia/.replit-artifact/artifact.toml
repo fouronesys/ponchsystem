@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Control de Asistencia"
+description = "Sistema seguro de registro de entrada y salida para empleados mediante códigos QR rotativos, con panel administrativo y auditoría de eventos."
+version = "1.0.0"
+id = "artifacts/control-asistencia"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20143
+
+[services.development]
+run = "pnpm --filter @workspace/control-asistencia run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/control-asistencia", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/control-asistencia/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20143"
+BASE_PATH = "/"
