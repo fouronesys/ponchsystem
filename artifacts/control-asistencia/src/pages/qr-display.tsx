@@ -6,6 +6,8 @@ import {
 } from "@workspace/api-client-react";
 import { QRCodeSVG } from "qrcode.react";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 type DisplayPhase = "ready" | "eating" | "thanks";
 
 function FarbotMascot({ className = "" }: { className?: string }) {
@@ -124,12 +126,17 @@ export default function QrDisplayPage({ accessToken }: { accessToken: string }) 
     return <main className="qr-display-shell"><span className="qr-display-loader" aria-label="Cargando código QR" /></main>;
   }
 
+  const qrValue = new URL(
+    `${basePath}/attendance/${encodeURIComponent(visibleQr.token)}`,
+    window.location.origin,
+  ).toString();
+
   return (
     <main className="qr-display-shell" aria-live="polite">
       <div className={`qr-display-stage qr-display-stage--${phase}`}>
         <div className="qr-display-code" aria-label="Código QR de asistencia">
           <QRCodeSVG
-            value={visibleQr.token}
+            value={qrValue}
             size={560}
             level="H"
             includeMargin

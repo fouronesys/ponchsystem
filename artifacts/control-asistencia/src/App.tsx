@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminPage from "@/pages/admin";
 import EmployeePage from "@/pages/employee";
+import AttendanceLinkPage from "@/pages/attendance-link";
 import QrDisplayPage from "@/pages/qr-display";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
@@ -48,7 +49,9 @@ function SignInPage() {
     setError("");
     try {
       const employee = await login(username, password);
-      setLocation(employee.role === "admin" ? "/admin" : "/");
+      const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo");
+      const returnTo = requestedReturnTo?.startsWith(`${basePath}/attendance/`) ? requestedReturnTo : null;
+      setLocation(employee.role === "admin" ? "/admin" : returnTo ?? "/");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No fue posible iniciar sesión.");
     } finally {
@@ -115,6 +118,9 @@ function Router() {
       <Switch>
         <Route path="/" component={HomeRoute} />
         <Route path="/admin" component={ProtectedAdmin} />
+        <Route path="/attendance/:token">
+          {(params) => <AttendanceLinkPage token={params.token} />}
+        </Route>
         <Route path="/qr-display/:accessToken" component={QrDisplayRoute} />
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route component={NotFound} />

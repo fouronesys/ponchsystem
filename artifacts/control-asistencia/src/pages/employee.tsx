@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useGetTodayAttendance, getGetTodayAttendanceQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,43 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
-import { QrCode, LogIn, LogOut, Loader2, CheckCircle2, Clock, AlertCircle, Camera } from "lucide-react";
+import { QrCode, LogIn, LogOut, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { QrScanner } from "@/components/qr-scanner";
-import { SelfieCapture } from "@/components/selfie-capture";
-import { apiFetch } from "@/lib/api";
 
 export default function EmployeePage() {
-  const [selfie, setSelfie] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: attendance, isLoading, isError, refetch } = useGetTodayAttendance();
-
-  const submitToken = async (token: string) => {
-    if (!selfie) return;
-    setPending(true);
-    try {
-      const event = await apiFetch<{ type: "check_in" | "check_out" }>("/attendance/scan", {
-        method: "POST",
-        body: JSON.stringify({ token, selfie }),
-      });
-      setSelfie(null);
-      toast({
-        title: "Registro exitoso",
-        description: `Se ha registrado tu ${event.type === "check_in" ? "entrada" : "salida"} correctamente.`,
-      });
-      await queryClient.invalidateQueries({ queryKey: getGetTodayAttendanceQueryKey() });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "No pudimos registrar la asistencia",
-        description: error instanceof Error ? error.message : "Intenta nuevamente con un QR vigente.",
-      });
-    } finally {
-      setPending(false);
-    }
-  };
 
   if (isLoading) {
     return <div className="mx-auto max-w-md"><Card><CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader><CardContent><Skeleton className="h-32 w-full" /></CardContent></Card></div>;
@@ -77,19 +46,12 @@ export default function EmployeePage() {
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg"><QrCode className="h-5 w-5 text-primary" />Registrar {isCheckedIn ? "salida" : "entrada"}</CardTitle>
-            <CardDescription>Por seguridad, primero toma una selfie y luego escanea el QR de recepción. No hay registro manual.</CardDescription>
+            <CardDescription>Escanea el QR de recepción con la cámara de tu teléfono. El enlace te traerá aquí para iniciar sesión, tomar tu selfie y confirmar el registro.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!selfie ? (
-              <SelfieCapture disabled={pending} onCaptured={setSelfie} />
-            ) : (
-              <div className="overflow-hidden rounded-xl border bg-muted">
-                <img src={selfie} alt="Selfie de evidencia" className="aspect-square w-full object-cover" />
-                <div className="flex items-center justify-between gap-3 p-3"><span className="flex items-center gap-2 text-sm font-medium"><Camera className="h-4 w-4 text-success" />Selfie lista</span><Button type="button" size="sm" variant="outline" onClick={() => setSelfie(null)} disabled={pending}>Repetir</Button></div>
-              </div>
-            )}
-            {selfie && <QrScanner disabled={pending} onDetected={(token) => void submitToken(token)} />}
-            {pending && <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Guardando evidencia y registro…</div>}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+              El registro sólo se completa desde el enlace seguro del QR vigente. No hay registro manual.
+            </div>
           </CardContent>
         </Card>
       )}
