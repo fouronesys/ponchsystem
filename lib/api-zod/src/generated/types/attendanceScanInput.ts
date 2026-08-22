@@ -12,4 +12,9 @@ export interface AttendanceScanInput {
      * @maxLength 512
      */
   token: string;
+  /**
+     * Front-camera image as a JPG, PNG, or WebP data URL.
+     * @minLength 100
+     */
+  selfie: string;
 }

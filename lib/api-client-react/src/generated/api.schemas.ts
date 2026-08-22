@@ -15,6 +15,11 @@ export interface AttendanceScanInput {
      * @maxLength 512
      */
   token: string;
+  /**
+     * Front-camera image as a JPG, PNG, or WebP data URL.
+     * @minLength 100
+     */
+  selfie: string;
 }
 
 export type AttendanceEventType = typeof AttendanceEventType[keyof typeof AttendanceEventType];
@@ -35,6 +40,10 @@ export interface AttendanceEvent {
   location: string | null;
   /** @nullable */
   deviceLabel: string | null;
+  /** @nullable */
+  selfieUrl: string | null;
+  /** @nullable */
+  loginAt: string | null;
 }
 
 export type AttendanceStatusState = typeof AttendanceStatusState[keyof typeof AttendanceStatusState];
@@ -70,6 +79,121 @@ export interface AttendanceSummary {
   late: number;
   checkedOut: number;
   lastEvent: AttendanceEvent | null;
+}
+
+export interface LoginInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  username: string;
+  /**
+     * @minLength 1
+     * @maxLength 256
+     */
+  password: string;
+}
+
+export type SessionEmployeeRole = typeof SessionEmployeeRole[keyof typeof SessionEmployeeRole];
+
+
+export const SessionEmployeeRole = {
+  admin: 'admin',
+  employee: 'employee',
+} as const;
+
+export interface SessionEmployee {
+  id: string;
+  username: string;
+  displayName: string;
+  role: SessionEmployeeRole;
+  /** @nullable */
+  profilePhotoUrl: string | null;
+}
+
+export interface SessionResponse {
+  employee: SessionEmployee;
+  loginAt?: string;
+  expiresAt: string;
+}
+
+export type EmployeeRole = typeof EmployeeRole[keyof typeof EmployeeRole];
+
+
+export const EmployeeRole = {
+  admin: 'admin',
+  employee: 'employee',
+} as const;
+
+export interface Employee {
+  id: string;
+  username: string;
+  displayName: string;
+  /** @nullable */
+  documentNumber: string | null;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  jobTitle: string | null;
+  active: boolean;
+  role: EmployeeRole;
+  /** @nullable */
+  profilePhotoUrl: string | null;
+  createdAt: string;
+}
+
+export interface EmployeeCreateInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  username: string;
+  /**
+     * @minLength 12
+     * @maxLength 256
+     */
+  password: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  displayName: string;
+  /** @maxLength 80 */
+  documentNumber?: string;
+  /** @maxLength 160 */
+  email?: string;
+  /** @maxLength 80 */
+  phone?: string;
+  /** @maxLength 120 */
+  jobTitle?: string;
+  /** @maxLength 3000000 */
+  profilePhoto?: string;
+}
+
+export interface EmployeeUpdateInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  displayName?: string;
+  /** @nullable */
+  documentNumber?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  jobTitle?: string | null;
+  /**
+     * @minLength 12
+     * @maxLength 256
+     */
+  password?: string;
+  /** @maxLength 3000000 */
+  profilePhoto?: string;
+  active?: boolean;
 }
 
 export type ListAttendanceEventsParams = {

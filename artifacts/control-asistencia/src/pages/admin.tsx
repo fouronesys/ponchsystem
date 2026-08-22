@@ -11,13 +11,16 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { QRCodeSVG } from "qrcode.react";
 import { formatTime, formatDateTime } from "@/lib/utils";
-import { Users, UserCheck, Clock, UserMinus, RotateCw, QrCode, LogIn, LogOut, MonitorSmartphone, MapPin } from "lucide-react";
+import { Users, UserCheck, Clock, UserMinus, RotateCw, QrCode, LogIn, LogOut, MonitorSmartphone } from "lucide-react";
+import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
+import { apiFetch, imageToDataUrl } from "@/lib/api";
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
@@ -159,6 +162,7 @@ export default function AdminPage() {
                     <TableHead>Evento</TableHead>
                     <TableHead>Hora</TableHead>
                     <TableHead className="hidden sm:table-cell">Dispositivo</TableHead>
+                    <TableHead>Evidencia</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -185,6 +189,14 @@ export default function AdminPage() {
                           <span className="truncate max-w-[120px]">{event.deviceLabel || 'App'}</span>
                         </div>
                       </TableCell>
+                      <TableCell>
+                        {event.selfieUrl ? (
+                          <a href={event.selfieUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                            <img src={event.selfieUrl} alt={`Selfie de ${event.employeeName}`} className="h-9 w-9 rounded-md object-cover" />
+                            Ver
+                          </a>
+                        ) : <span className="text-xs text-muted-foreground">Sin evidencia</span>}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -194,7 +206,124 @@ export default function AdminPage() {
         </Card>
 
       </div>
+
+      <EmployeeManager />
     </div>
+  );
+}
+
+type EmployeeRecord = {
+  id: string;
+  username: string;
+  displayName: string;
+  documentNumber: string | null;
+  email: string | null;
+  phone: string | null;
+  jobTitle: string | null;
+  active: boolean;
+  role: "admin" | "employee";
+  profilePhotoUrl: string | null;
+  createdAt: string;
+};
+
+function EmployeeManager() {
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      setEmployees(await apiFetch<EmployeeRecord[]>("/admin/employees"));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos cargar los empleados.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void refresh(); }, []);
+
+  const create = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setSaving(true);
+    setError("");
+    try {
+      const photo = form.get("profilePhoto");
+      const profilePhoto = photo instanceof File && photo.size ? await imageToDataUrl(photo) : undefined;
+      await apiFetch("/admin/employees", {
+        method: "POST",
+        body: JSON.stringify({
+          username: form.get("username"),
+          password: form.get("password"),
+          displayName: form.get("displayName"),
+          documentNumber: form.get("documentNumber"),
+          email: form.get("email"),
+          phone: form.get("phone"),
+          jobTitle: form.get("jobTitle"),
+          profilePhoto,
+        }),
+      });
+      event.currentTarget.reset();
+      await refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos crear el empleado.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async (employee: EmployeeRecord) => {
+    setError("");
+    try {
+      const updated = await apiFetch<EmployeeRecord>(`/admin/employees/${employee.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ active: !employee.active }),
+      });
+      setEmployees((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos actualizar el empleado.");
+    }
+  };
+
+  return (
+    <section className="space-y-5">
+      <div><h2 className="text-2xl font-semibold tracking-tight">Personal y credenciales</h2><p className="text-sm text-muted-foreground">Crea accesos locales y conserva la evidencia incluso cuando una cuenta se desactiva.</p></div>
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" />Nuevo empleado</CardTitle><CardDescription>La contraseña inicial debe tener al menos 12 caracteres.</CardDescription></CardHeader>
+        <CardContent>
+          <form onSubmit={create} className="grid gap-3 md:grid-cols-2">
+            <Input required name="displayName" placeholder="Nombre completo" />
+            <Input required name="username" placeholder="Usuario de acceso" autoComplete="off" />
+            <Input required name="password" type="password" minLength={12} placeholder="Contraseña temporal (12+)" autoComplete="new-password" />
+            <Input name="documentNumber" placeholder="Documento (opcional)" />
+            <Input name="email" type="email" placeholder="Correo (opcional)" />
+            <Input name="phone" placeholder="Teléfono (opcional)" />
+            <Input name="jobTitle" placeholder="Cargo (opcional)" />
+            <Input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp" />
+            <div className="md:col-span-2"><Button disabled={saving}>{saving ? "Creando…" : "Crear empleado"}</Button></div>
+          </form>
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Directorio de empleados</CardTitle><CardDescription>Desactivar una cuenta impide nuevos accesos sin eliminar su historial.</CardDescription></div><Button variant="outline" size="sm" onClick={() => void refresh()}><RotateCw className="mr-2 h-4 w-4" />Actualizar</Button></CardHeader>
+        <CardContent>
+          {loading ? <Skeleton className="h-24 w-full" /> : employees.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay empleados registrados.</p> : (
+            <div className="space-y-3">
+              {employees.map((employee) => <div key={employee.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
+                {employee.profilePhotoUrl ? <img src={employee.profilePhotoUrl} alt={`Foto de ${employee.displayName}`} className="h-11 w-11 rounded-full object-cover" /> : <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary"><UserRound className="h-5 w-5 text-muted-foreground" /></div>}
+                <div className="min-w-[160px] flex-1"><p className="font-medium">{employee.displayName}</p><p className="text-xs text-muted-foreground">@{employee.username}{employee.jobTitle ? ` · ${employee.jobTitle}` : ""}</p></div>
+                <Badge variant={employee.active ? "success" : "secondary"}>{employee.active ? "Activa" : "Desactivada"}</Badge>
+                {employee.role !== "admin" && <Button size="sm" variant="outline" onClick={() => void toggleActive(employee)}>{employee.active ? <><UserRoundX className="mr-2 h-4 w-4" />Desactivar</> : <><UserRound className="mr-2 h-4 w-4" />Activar</>}</Button>}
+              </div>)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 

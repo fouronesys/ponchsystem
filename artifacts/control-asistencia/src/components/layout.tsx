@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { useClerk } from "@clerk/react";
 import { ShieldCheck, User, BarChart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -12,7 +12,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
+  const { employee, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
@@ -24,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <nav className="flex items-center gap-1">
-            <Link href="/" className={cn(
+            {employee?.role === "employee" && <Link href="/" className={cn(
               "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
               location === "/" 
                 ? "bg-primary/10 text-primary" 
@@ -32,8 +32,8 @@ export function Layout({ children }: LayoutProps) {
             )}>
               <User className="w-4 h-4" />
               Empleado
-            </Link>
-            <Link href="/admin" className={cn(
+            </Link>}
+            {employee?.role === "admin" && <Link href="/admin" className={cn(
               "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
               location === "/admin" 
                 ? "bg-primary/10 text-primary" 
@@ -41,11 +41,11 @@ export function Layout({ children }: LayoutProps) {
             )}>
               <BarChart className="w-4 h-4" />
               Consola
-            </Link>
+            </Link>}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => void signOut({ redirectUrl: basePath || "/" })}
+              onClick={() => void logout().then(() => window.location.assign(basePath || "/"))}
               aria-label="Cerrar sesión"
             >
               <LogOut className="w-4 h-4" />

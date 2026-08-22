@@ -17,4 +17,8 @@ export interface AttendanceEvent {
   location: string | null;
   /** @nullable */
   deviceLabel: string | null;
+  /** @nullable */
+  selfieUrl: string | null;
+  /** @nullable */
+  loginAt: Date | null;
 }

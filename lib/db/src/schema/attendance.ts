@@ -13,8 +13,14 @@ export const employeesTable = sqliteTable(
   "employees",
   {
     id: text("id").primaryKey(),
-    clerkUserId: text("clerk_user_id").notNull(),
+    username: text("username").notNull(),
+    passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
+    documentNumber: text("document_number"),
+    email: text("email"),
+    phone: text("phone"),
+    jobTitle: text("job_title"),
+    profilePhotoPath: text("profile_photo_path"),
     role: text("role").notNull().default("employee"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -22,8 +28,43 @@ export const employeesTable = sqliteTable(
       .$defaultFn(() => new Date()),
   },
   (table) => [
-    uniqueIndex("employees_clerk_user_id_unique").on(table.clerkUserId),
+    uniqueIndex("employees_username_unique").on(table.username),
   ],
+);
+
+export const authSessionsTable = sqliteTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id")
+      .notNull()
+      .references(() => employeesTable.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    loginAt: integer("login_at", { mode: "timestamp_ms" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("auth_sessions_token_hash_unique").on(table.tokenHash),
+    index("auth_sessions_expiry_idx").on(table.expiresAt),
+  ],
+);
+
+export const loginEventsTable = sqliteTable(
+  "login_events",
+  {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id").references(() => employeesTable.id, {
+      onDelete: "set null",
+    }),
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    success: integer("success", { mode: "boolean" }).notNull(),
+    ipAddress: text("ip_address"),
+    deviceLabel: text("device_label"),
+  },
+  (table) => [index("login_events_employee_time_idx").on(table.employeeId, table.occurredAt)],
 );
 
 export const attendanceTokensTable = sqliteTable(
@@ -65,6 +106,11 @@ export const attendanceEventsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     location: text("location"),
     deviceLabel: text("device_label"),
+    sessionId: text("session_id").references(() => authSessionsTable.id, {
+      onDelete: "set null",
+    }),
+    loginAt: integer("login_at", { mode: "timestamp_ms" }),
+    selfiePath: text("selfie_path"),
   },
   (table) => [
     index("attendance_events_employee_time_idx").on(
@@ -85,6 +131,7 @@ export const insertAttendanceEventSchema = createInsertSchema(
 ).omit({ occurredAt: true });
 
 export type Employee = typeof employeesTable.$inferSelect;
+export type AuthSession = typeof authSessionsTable.$inferSelect;
 export type AttendanceToken = typeof attendanceTokensTable.$inferSelect;
 export type AttendanceEvent = typeof attendanceEventsTable.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;

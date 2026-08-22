@@ -31,15 +31,67 @@ export const GetTodayAttendanceResponse = zod.object({
 
 
 /**
+ * @summary Start a local employee session
+ */
+export const loginBodyUsernameMax = 80;
+
+export const loginBodyPasswordMax = 256;
+
+
+
+export const LoginBody = zod.object({
+  "username": zod.string().min(1).max(loginBodyUsernameMax),
+  "password": zod.string().min(1).max(loginBodyPasswordMax)
+})
+
+export const LoginResponse = zod.object({
+  "employee": zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['admin', 'employee']),
+  "profilePhotoUrl": zod.string().nullable()
+}),
+  "loginAt": zod.coerce.date().optional(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary End the current local session
+ */
+export const LogoutResponse = zod.void()
+
+
+/**
+ * @summary Get current local session
+ */
+export const GetCurrentSessionResponse = zod.object({
+  "employee": zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['admin', 'employee']),
+  "profilePhotoUrl": zod.string().nullable()
+}),
+  "loginAt": zod.coerce.date().optional(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Consume a rotating QR token and record attendance
  */
 export const scanAttendanceQrBodyTokenMin = 16;
 export const scanAttendanceQrBodyTokenMax = 512;
 
+export const scanAttendanceQrBodySelfieMin = 100;
+
 
 
 export const ScanAttendanceQrBody = zod.object({
-  "token": zod.string().min(scanAttendanceQrBodyTokenMin).max(scanAttendanceQrBodyTokenMax)
+  "token": zod.string().min(scanAttendanceQrBodyTokenMin).max(scanAttendanceQrBodyTokenMax),
+  "selfie": zod.string().min(scanAttendanceQrBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.')
 })
 
 export const ScanAttendanceQrResponse = zod.object({
@@ -49,7 +101,9 @@ export const ScanAttendanceQrResponse = zod.object({
   "type": zod.enum(['check_in', 'check_out']),
   "timestamp": zod.coerce.date(),
   "location": zod.string().nullable(),
-  "deviceLabel": zod.string().nullable()
+  "deviceLabel": zod.string().nullable(),
+  "selfieUrl": zod.string().nullable(),
+  "loginAt": zod.coerce.date().nullable()
 })
 
 
@@ -89,7 +143,9 @@ export const ListAttendanceEventsResponseItem = zod.object({
   "type": zod.enum(['check_in', 'check_out']),
   "timestamp": zod.coerce.date(),
   "location": zod.string().nullable(),
-  "deviceLabel": zod.string().nullable()
+  "deviceLabel": zod.string().nullable(),
+  "selfieUrl": zod.string().nullable(),
+  "loginAt": zod.coerce.date().nullable()
 })
 export const ListAttendanceEventsResponse = zod.array(ListAttendanceEventsResponseItem)
 
@@ -109,8 +165,119 @@ export const GetAttendanceSummaryResponse = zod.object({
   "type": zod.enum(['check_in', 'check_out']),
   "timestamp": zod.coerce.date(),
   "location": zod.string().nullable(),
-  "deviceLabel": zod.string().nullable()
+  "deviceLabel": zod.string().nullable(),
+  "selfieUrl": zod.string().nullable(),
+  "loginAt": zod.coerce.date().nullable()
 }),zod.null()])
+})
+
+
+/**
+ * @summary List local employee accounts
+ */
+export const ListEmployeesResponseItem = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "documentNumber": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "jobTitle": zod.string().nullable(),
+  "active": zod.boolean(),
+  "role": zod.enum(['admin', 'employee']),
+  "profilePhotoUrl": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
+
+
+/**
+ * @summary Create a local employee account
+ */
+export const createEmployeeBodyUsernameMax = 80;
+
+export const createEmployeeBodyPasswordMin = 12;
+export const createEmployeeBodyPasswordMax = 256;
+
+export const createEmployeeBodyDisplayNameMax = 160;
+
+export const createEmployeeBodyDocumentNumberMax = 80;
+
+export const createEmployeeBodyEmailMax = 160;
+
+export const createEmployeeBodyPhoneMax = 80;
+
+export const createEmployeeBodyJobTitleMax = 120;
+
+export const createEmployeeBodyProfilePhotoMax = 3000000;
+
+
+
+export const CreateEmployeeBody = zod.object({
+  "username": zod.string().min(1).max(createEmployeeBodyUsernameMax),
+  "password": zod.string().min(createEmployeeBodyPasswordMin).max(createEmployeeBodyPasswordMax),
+  "displayName": zod.string().min(1).max(createEmployeeBodyDisplayNameMax),
+  "documentNumber": zod.string().max(createEmployeeBodyDocumentNumberMax).optional(),
+  "email": zod.string().max(createEmployeeBodyEmailMax).optional(),
+  "phone": zod.string().max(createEmployeeBodyPhoneMax).optional(),
+  "jobTitle": zod.string().max(createEmployeeBodyJobTitleMax).optional(),
+  "profilePhoto": zod.string().max(createEmployeeBodyProfilePhotoMax).optional()
+})
+
+export const CreateEmployeeResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "documentNumber": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "jobTitle": zod.string().nullable(),
+  "active": zod.boolean(),
+  "role": zod.enum(['admin', 'employee']),
+  "profilePhotoUrl": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update an employee account
+ */
+export const UpdateEmployeeParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateEmployeeBodyDisplayNameMax = 160;
+
+export const updateEmployeeBodyPasswordMin = 12;
+export const updateEmployeeBodyPasswordMax = 256;
+
+export const updateEmployeeBodyProfilePhotoMax = 3000000;
+
+
+
+export const UpdateEmployeeBody = zod.object({
+  "displayName": zod.string().min(1).max(updateEmployeeBodyDisplayNameMax).optional(),
+  "documentNumber": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "jobTitle": zod.string().nullish(),
+  "password": zod.string().min(updateEmployeeBodyPasswordMin).max(updateEmployeeBodyPasswordMax).optional(),
+  "profilePhoto": zod.string().max(updateEmployeeBodyProfilePhotoMax).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateEmployeeResponse = zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "displayName": zod.string(),
+  "documentNumber": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "jobTitle": zod.string().nullable(),
+  "active": zod.boolean(),
+  "role": zod.enum(['admin', 'employee']),
+  "profilePhotoUrl": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
 })
 
 

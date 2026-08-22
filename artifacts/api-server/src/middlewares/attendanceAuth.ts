@@ -1,68 +1,39 @@
-import { getAuth } from "@clerk/express";
-import { db, employeesTable, type Employee } from "@workspace/db";
+import { db, employeesTable, type AuthSession, type Employee } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
-import { randomUUID } from "node:crypto";
+import { findSession } from "../lib/localAuth";
 
 export type AuthenticatedRequest = Request & {
-  clerkUserId?: string;
   employee?: Employee;
+  session?: AuthSession;
 };
-
-function adminIds(): Set<string> {
-  return new Set(
-    (process.env.ADMIN_CLERK_USER_IDS ?? "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-  );
-}
-
-export async function ensureEmployee(clerkUserId: string): Promise<Employee> {
-  await db
-    .insert(employeesTable)
-    .values({
-      id: randomUUID(),
-      clerkUserId,
-      displayName: `Empleado ${clerkUserId.slice(-6)}`,
-      role: adminIds().has(clerkUserId) ? "admin" : "employee",
-    })
-    .onConflictDoNothing({ target: employeesTable.clerkUserId });
-
-  const [employee] = await db
-    .select()
-    .from(employeesTable)
-    .where(eq(employeesTable.clerkUserId, clerkUserId));
-
-  if (!employee) {
-    throw new Error("Employee provisioning failed");
-  }
-
-  return employee;
-}
 
 export async function requireAuthenticated(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const auth = getAuth(req);
-  const candidateUserId = auth?.sessionClaims?.userId || auth?.userId;
-  const clerkUserId =
-    typeof candidateUserId === "string" ? candidateUserId : undefined;
-
-  if (!clerkUserId) {
+  const token = typeof req.cookies?.attendance_session === "string"
+    ? req.cookies.attendance_session
+    : "";
+  if (!token) {
     res.status(401).json({ error: "Autenticación requerida" });
     return;
   }
 
   try {
-    req.clerkUserId = clerkUserId;
-    req.employee = await ensureEmployee(clerkUserId);
+    const found = await findSession(token);
+    if (!found) {
+      res.clearCookie("attendance_session", { path: "/" });
+      res.status(401).json({ error: "La sesión expiró. Inicia sesión nuevamente." });
+      return;
+    }
+    req.employee = found.employee;
+    req.session = found.session;
     next();
   } catch (error) {
-    req.log.error({ err: error }, "Employee provisioning failed");
-    res.status(500).json({ error: "No fue posible preparar el perfil" });
+    req.log.error({ err: error }, "Local session lookup failed");
+    res.status(500).json({ error: "No fue posible validar la sesión" });
   }
 }
 
@@ -72,14 +43,11 @@ export async function requireAdministrator(
   next: NextFunction,
 ): Promise<void> {
   await requireAuthenticated(req, res, () => undefined);
-  if (!req.employee || !req.clerkUserId) {
+  if (!req.employee) {
     return;
   }
 
-  if (
-    req.employee.role !== "admin" &&
-    !adminIds().has(req.clerkUserId)
-  ) {
+  if (req.employee.role !== "admin") {
     res.status(403).json({ error: "Se requieren permisos de administrador" });
     return;
   }

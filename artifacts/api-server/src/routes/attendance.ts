@@ -34,6 +34,7 @@ import {
   secondsUntil,
   tokenExpiry,
 } from "../lib/qrSecurity";
+import { removeImage, saveImage } from "../lib/imageStorage";
 
 const router: IRouter = Router();
 
@@ -60,6 +61,8 @@ function eventResponse(
     timestamp: event.occurredAt,
     location: event.location,
     deviceLabel: event.deviceLabel,
+    selfieUrl: event.selfiePath ? `/api/media/${event.selfiePath}` : null,
+    loginAt: event.loginAt,
   };
 }
 
@@ -194,16 +197,25 @@ router.post(
       return;
     }
 
-    const clientIp =
-      req.ip || req.socket.remoteAddress || "unknown";
-    const scanKey = `${req.clerkUserId}:${clientIp}`;
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+    const employee = req.employee!;
+    const scanKey = `${employee.id}:${clientIp}`;
     if (!canAttemptScan(scanKey)) {
-      req.log.warn({ clerkUserId: req.clerkUserId }, "QR scan rate limit exceeded");
+      req.log.warn({ employeeId: employee.id }, "QR scan rate limit exceeded");
       res.status(429).json({ error: "Demasiados intentos. Espera unos minutos." });
       return;
     }
 
-    const employee = req.employee!;
+    let selfiePath: string;
+    try {
+      selfiePath = await saveImage(parsed.data.selfie, "selfies");
+    } catch (error) {
+      res.status(400).json({
+        error: error instanceof Error ? error.message : "La selfie es obligatoria.",
+      });
+      return;
+    }
+
     const now = new Date();
     const tokenHash = hashToken(parsed.data.token);
 
@@ -245,7 +257,10 @@ router.post(
           type: todayLatest?.type === "check_in" ? "check_out" : "check_in",
           occurredAt: now,
           location: null,
-          deviceLabel: null,
+          deviceLabel: req.get("user-agent")?.slice(0, 180) ?? null,
+          sessionId: req.session?.id ?? null,
+          loginAt: req.session?.loginAt ?? null,
+          selfiePath,
         })
         .returning()
         .get();
@@ -259,7 +274,8 @@ router.post(
     });
 
     if (!event) {
-      req.log.warn({ clerkUserId: req.clerkUserId }, "QR token rejected");
+      await removeImage(selfiePath);
+      req.log.warn({ employeeId: employee.id }, "QR token rejected");
       res.status(400).json({ error: "El QR expiró, ya fue utilizado o no es válido." });
       return;
     }

@@ -26,55 +26,52 @@ Configura estas variables en **App Configs > Environmental Variables**:
 
 | Variable | Obligatoria | Uso |
 | --- | --- | --- |
-| `CLERK_SECRET_KEY` | Sí | Validación de sesiones en el servidor |
-| `CLERK_PUBLISHABLE_KEY` | Sí | Configuración de Clerk en el servidor |
 | `SESSION_SECRET` | Sí | Cifrado y firma de tokens QR |
-| `ADMIN_CLERK_USER_IDS` | Sí | IDs de Clerk con acceso a la consola, separados por comas |
+| `INITIAL_ADMIN_USERNAME` | Solo primer arranque | Usuario del primer administrador local |
+| `INITIAL_ADMIN_PASSWORD` | Solo primer arranque | Contraseña de al menos 12 caracteres del primer administrador |
+| `INITIAL_ADMIN_NAME` | No | Nombre visible del primer administrador |
 | `LOG_LEVEL` | No | Por defecto `info` |
 | `SQLITE_DATABASE_PATH` | No | Por defecto `/app/data/attendance.sqlite` |
 
 CapRover proporciona `PORT=80` en la imagen. No sobrescribas `FRONTEND_DIST_DIR`
 salvo que cambies la ubicación del frontend.
 
-## 3. Configuración de Clerk
-
-La clave publicable se inyecta al arrancar el contenedor desde
-`CLERK_PUBLISHABLE_KEY`; no necesitas configurar argumentos de build. La clave
-es pública, pero `CLERK_SECRET_KEY` nunca debe estar en argumentos de build ni
-en archivos del repositorio. Ambas deben existir como variables runtime de
-CapRover.
-
-En Clerk, añade el dominio público de CapRover como dominio permitido y
-configura las URLs de inicio de sesión y redirección para `/sign-in` y
-`/sign-up`.
-
-## 4. Datos persistentes y backups
+## 3. Datos persistentes y backups
 
 En el primer arranque, la aplicación crea las tablas SQLite automáticamente en
 el volumen montado. No configures `DATABASE_URL` ni instales PostgreSQL para
 esta modalidad.
 
-El archivo `attendance.sqlite` contiene empleados, eventos de asistencia y
-tokens QR. Haz copias de seguridad periódicas de la carpeta persistente
+El archivo `attendance.sqlite` contiene credenciales locales hasheadas,
+sesiones, eventos de asistencia y tokens QR. Las fotos de perfil y selfies se
+guardan en `/app/data/uploads`, fuera de SQLite. Haz copias de seguridad periódicas de la carpeta persistente
 `/app/data` desde el host de CapRover. Un volumen protege contra redeploys, pero
 no sustituye un backup independiente.
 
-## 5. Administrador inicial
+## 4. Administrador inicial
 
-No se habilita automáticamente al primer usuario. Después de crear la cuenta
-administradora en Clerk, agrega su `user_id` a `ADMIN_CLERK_USER_IDS` y
-redeploya la aplicación. Esto evita que alguien que llegue primero al dominio
-obtenga acceso administrativo.
+No existe un registro público. En el primer arranque, la aplicación crea el
+administrador exclusivamente a partir de `INITIAL_ADMIN_USERNAME` y
+`INITIAL_ADMIN_PASSWORD`; si esas variables no existen, no crea ninguna cuenta.
+Esto evita que quien visite primero el dominio obtenga permisos de consola.
+Guarda la contraseña como secreto de CapRover y, una vez creado el
+administrador, elimina la variable `INITIAL_ADMIN_PASSWORD` antes de futuros
+despliegues.
+
+El administrador crea las cuentas de empleados desde la consola. Cada empleado
+inicia sesión con usuario y contraseña, toma una selfie con la cámara frontal y
+escanea un QR de un solo uso para cada entrada o salida. No se aplica
+reconocimiento facial automático; las selfies son evidencia disponible solo
+para el empleado asociado o para administradores autenticados.
 
 ## Build local opcional
 
 ```bash
 docker build -t control-asistencia .
 docker run --rm -p 8080:80 \
-  -e CLERK_SECRET_KEY='sk_test_xxx' \
-  -e CLERK_PUBLISHABLE_KEY='pk_test_xxx' \
   -e SESSION_SECRET='genera-un-secreto-largo' \
-  -e ADMIN_CLERK_USER_IDS='user_xxx' \
+  -e INITIAL_ADMIN_USERNAME='admin' \
+  -e INITIAL_ADMIN_PASSWORD='una-clave-larga-de-prueba' \
   -v control-asistencia-data:/app/data \
   control-asistencia
 ```

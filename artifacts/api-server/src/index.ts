@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { bootstrapAdministrator } from "./lib/localAuth";
 
 const rawPort = process.env["PORT"];
 
@@ -13,6 +14,13 @@ const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+try {
+  await bootstrapAdministrator(logger);
+} catch (error) {
+  logger.fatal({ err: error }, "Could not initialize local administrator");
+  process.exit(1);
 }
 
 app.listen(port, (err) => {

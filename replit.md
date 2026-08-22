@@ -15,9 +15,9 @@ Sistema web seguro para registrar entradas y salidas de empleados mediante QR ro
 
 - `docker build -t control-asistencia .`
 - `captain-definition` y `Dockerfile` despliegan el frontend y API en un solo contenedor.
-- Variables runtime requeridas: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `SESSION_SECRET` y `ADMIN_CLERK_USER_IDS`.
+- Variables runtime requeridas: `SESSION_SECRET`, `INITIAL_ADMIN_USERNAME` y `INITIAL_ADMIN_PASSWORD` (solo para crear el primer administrador local).
 - En CapRover, monta `/app/data` como directorio persistente para conservar SQLite.
-- Consulta `CAPROVER.md` para el health check, Clerk, PostgreSQL y configuración del administrador.
+- Consulta `CAPROVER.md` para el health check, SQLite persistente, fotos y configuración del administrador local.
 
 ## Stack
 

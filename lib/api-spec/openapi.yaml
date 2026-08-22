@@ -14,6 +14,8 @@ tags:
     description: Employee attendance operations
   - name: admin
     description: Administrative attendance operations
+  - name: auth
+    description: Local account and session operations
 paths:
   /healthz:
     get:
@@ -40,6 +42,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AttendanceStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Start a local employee session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Too many attempts
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current local session
+      responses:
+        "204":
+          description: Session cleared
+  /auth/me:
+    get:
+      operationId: getCurrentSession
+      tags: [auth]
+      summary: Get current local session
+      responses:
+        "200":
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
   /attendance/scan:
     post:
       operationId: scanAttendanceQr
@@ -119,6 +163,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AttendanceSummary"
+  /admin/employees:
+    get:
+      operationId: listEmployees
+      tags: [admin]
+      summary: List local employee accounts
+      responses:
+        "200":
+          description: Employees
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Employee"
+    post:
+      operationId: createEmployee
+      tags: [admin]
+      summary: Create a local employee account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeCreateInput"
+      responses:
+        "201":
+          description: Created employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+  /admin/employees/{id}:
+    put:
+      operationId: updateEmployee
+      tags: [admin]
+      summary: Update an employee account
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeUpdateInput"
+      responses:
+        "200":
+          description: Updated employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
 components:
   schemas:
     HealthStatus:
@@ -135,7 +233,11 @@ components:
           type: string
           minLength: 16
           maxLength: 512
-      required: [token]
+        selfie:
+          type: string
+          minLength: 100
+          description: Front-camera image as a JPG, PNG, or WebP data URL.
+      required: [token, selfie]
     AttendanceEvent:
       type: object
       properties:
@@ -150,7 +252,12 @@ components:
           type: ["string", "null"]
         deviceLabel:
           type: ["string", "null"]
-      required: [id, employeeId, employeeName, type, timestamp, location, deviceLabel]
+        selfieUrl:
+          type: ["string", "null"]
+        loginAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, employeeId, employeeName, type, timestamp, location, deviceLabel, selfieUrl, loginAt]
     AttendanceStatus:
       type: object
       properties:
@@ -193,4 +300,64 @@ components:
             - $ref: "#/components/schemas/AttendanceEvent"
             - type: "null"
       required: [present, expected, late, checkedOut, lastEvent]
+    LoginInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 1, maxLength: 80 }
+        password: { type: string, minLength: 1, maxLength: 256 }
+      required: [username, password]
+    SessionEmployee:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [admin, employee] }
+        profilePhotoUrl: { type: ["string", "null"] }
+      required: [id, username, displayName, role, profilePhotoUrl]
+    SessionResponse:
+      type: object
+      properties:
+        employee: { $ref: "#/components/schemas/SessionEmployee" }
+        loginAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+      required: [employee, expiresAt]
+    Employee:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        documentNumber: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        jobTitle: { type: ["string", "null"] }
+        active: { type: boolean }
+        role: { type: string, enum: [admin, employee] }
+        profilePhotoUrl: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, username, displayName, documentNumber, email, phone, jobTitle, active, role, profilePhotoUrl, createdAt]
+    EmployeeCreateInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 1, maxLength: 80 }
+        password: { type: string, minLength: 12, maxLength: 256 }
+        displayName: { type: string, minLength: 1, maxLength: 160 }
+        documentNumber: { type: string, maxLength: 80 }
+        email: { type: string, maxLength: 160 }
+        phone: { type: string, maxLength: 80 }
+        jobTitle: { type: string, maxLength: 120 }
+        profilePhoto: { type: string, maxLength: 3000000 }
+      required: [username, password, displayName]
+    EmployeeUpdateInput:
+      type: object
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 160 }
+        documentNumber: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        jobTitle: { type: ["string", "null"] }
+        password: { type: string, minLength: 12, maxLength: 256 }
+        profilePhoto: { type: string, maxLength: 3000000 }
+        active: { type: boolean }
 
