@@ -192,6 +192,28 @@ export const ListAttendanceEventsResponse = zod.array(ListAttendanceEventsRespon
 
 
 /**
+ * @summary Download an attendance payroll report as PDF
+ */
+export const ExportAttendancePdfQueryParams = zod.object({
+  "start": zod.date(),
+  "end": zod.date()
+})
+
+export const ExportAttendancePdfResponse = zod.unknown()
+
+
+/**
+ * @summary Download an attendance payroll report as XML
+ */
+export const ExportAttendanceXmlQueryParams = zod.object({
+  "start": zod.date(),
+  "end": zod.date()
+})
+
+export const ExportAttendanceXmlResponse = zod.unknown()
+
+
+/**
  * @summary Get attendance dashboard summary
  */
 export const GetAttendanceSummaryResponse = zod.object({

@@ -27,6 +27,8 @@ import type {
   Employee,
   EmployeeCreateInput,
   EmployeeUpdateInput,
+  ExportAttendancePdfParams,
+  ExportAttendanceXmlParams,
   HealthStatus,
   ListAttendanceEventsParams,
   LoginInput,
@@ -949,6 +951,174 @@ export function useListAttendanceEvents<TData = Awaited<ReturnType<typeof listAt
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAttendanceEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAttendancePdfUrl = (params: ExportAttendancePdfParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/reports/attendance.pdf?${stringifiedParams}` : `/api/admin/reports/attendance.pdf`
+}
+
+/**
+ * @summary Download an attendance payroll report as PDF
+ */
+export const exportAttendancePdf = async (params: ExportAttendancePdfParams, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportAttendancePdfUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAttendancePdfQueryKey = (params?: ExportAttendancePdfParams,) => {
+    return [
+    `/api/admin/reports/attendance.pdf`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportAttendancePdfQueryOptions = <TData = Awaited<ReturnType<typeof exportAttendancePdf>>, TError = ErrorType<void>>(params: ExportAttendancePdfParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAttendancePdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAttendancePdfQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAttendancePdf>>> = ({ signal }) => exportAttendancePdf(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAttendancePdf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAttendancePdfQueryResult = NonNullable<Awaited<ReturnType<typeof exportAttendancePdf>>>
+export type ExportAttendancePdfQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download an attendance payroll report as PDF
+ */
+
+export function useExportAttendancePdf<TData = Awaited<ReturnType<typeof exportAttendancePdf>>, TError = ErrorType<void>>(
+ params: ExportAttendancePdfParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAttendancePdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAttendancePdfQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAttendanceXmlUrl = (params: ExportAttendanceXmlParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/reports/attendance.xml?${stringifiedParams}` : `/api/admin/reports/attendance.xml`
+}
+
+/**
+ * @summary Download an attendance payroll report as XML
+ */
+export const exportAttendanceXml = async (params: ExportAttendanceXmlParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportAttendanceXmlUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAttendanceXmlQueryKey = (params?: ExportAttendanceXmlParams,) => {
+    return [
+    `/api/admin/reports/attendance.xml`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportAttendanceXmlQueryOptions = <TData = Awaited<ReturnType<typeof exportAttendanceXml>>, TError = ErrorType<void>>(params: ExportAttendanceXmlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAttendanceXml>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAttendanceXmlQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAttendanceXml>>> = ({ signal }) => exportAttendanceXml(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAttendanceXml>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAttendanceXmlQueryResult = NonNullable<Awaited<ReturnType<typeof exportAttendanceXml>>>
+export type ExportAttendanceXmlQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download an attendance payroll report as XML
+ */
+
+export function useExportAttendanceXml<TData = Awaited<ReturnType<typeof exportAttendanceXml>>, TError = ErrorType<void>>(
+ params: ExportAttendanceXmlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAttendanceXml>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAttendanceXmlQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
