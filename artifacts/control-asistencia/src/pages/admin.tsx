@@ -3,6 +3,8 @@ import {
   useRotateQrToken,
   useGetAttendanceSummary,
   useListAttendanceEvents,
+  exportAttendancePdf,
+  exportAttendanceXml,
   getGetAttendanceSummaryQueryKey,
   getListAttendanceEventsQueryKey
 } from "@workspace/api-client-react";
@@ -14,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime, formatDateTime } from "@/lib/utils";
-import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone } from "lucide-react";
+import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone, Download, FileCode2, FileText } from "lucide-react";
 import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
 import { apiFetch, imageToDataUrl } from "@/lib/api";
 import type { WeeklySchedule, WeeklyScheduleDay } from "@workspace/api-client-react";
@@ -229,8 +231,66 @@ export default function AdminPage() {
 
       </div>
 
+      <ReportExporter />
       <EmployeeManager />
     </div>
+  );
+}
+
+function ReportExporter() {
+  const today = new Date().toISOString().slice(0, 10);
+  const monthStart = `${today.slice(0, 8)}01`;
+  const [startDate, setStartDate] = useState(monthStart);
+  const [endDate, setEndDate] = useState(today);
+  const [downloading, setDownloading] = useState<"pdf" | "xml" | null>(null);
+  const [error, setError] = useState("");
+
+  const download = async (format: "pdf" | "xml") => {
+    if (!startDate || !endDate || startDate > endDate) {
+      setError("Selecciona un rango de fechas válido.");
+      return;
+    }
+    setDownloading(format);
+    setError("");
+    try {
+      const filename = `farcheck-rd-asistencia-${startDate}-${endDate}.${format}`;
+      const blob = format === "pdf"
+        ? await exportAttendancePdf({ start: startDate, end: endDate })
+        : new Blob([await exportAttendanceXml({ start: startDate, end: endDate })], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos generar el reporte.");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return (
+    <Card className="border-primary/20 bg-primary/[0.02]">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5 text-primary" />Reportes para nómina</CardTitle>
+        <CardDescription>Exporta la asistencia del período con horas, ausencias y excepciones de puntualidad.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-medium">Desde<Input type="date" value={startDate} max={endDate || undefined} onChange={(event) => setStartDate(event.target.value)} aria-label="Fecha inicial del reporte" className="mt-1" /></label>
+          <label className="text-sm font-medium">Hasta<Input type="date" value={endDate} min={startDate || undefined} max={today} onChange={(event) => setEndDate(event.target.value)} aria-label="Fecha final del reporte" className="mt-1" /></label>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button onClick={() => void download("pdf")} disabled={Boolean(downloading)}><FileText className="mr-2 h-4 w-4" />{downloading === "pdf" ? "Generando PDF…" : "Descargar PDF"}</Button>
+          <Button variant="outline" onClick={() => void download("xml")} disabled={Boolean(downloading)}><FileCode2 className="mr-2 h-4 w-4" />{downloading === "xml" ? "Generando XML…" : "Descargar XML"}</Button>
+        </div>
+        <p className="text-xs text-muted-foreground">El XML es el formato estructurado propio de FarCheck RD para importar o revisar en nómina.</p>
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -45,6 +45,12 @@ import {
 import { removeImage, saveImage } from "../lib/imageStorage";
 import { logger } from "../lib/logger";
 import {
+  buildPayrollAttendanceReport,
+  parsePayrollReportRange,
+  payrollReportPdf,
+  payrollReportXml,
+} from "../lib/payrollReport";
+import {
   attendanceTimingStatus,
   getWeeklySchedule,
   scheduleDayForDate,
@@ -497,6 +503,44 @@ router.get(
       .map((row) => eventResponse(row.event, row.employee, schedules.get(row.employee.id)));
 
     res.json(ListAttendanceEventsResponse.parse(events));
+  },
+);
+
+router.get(
+  "/admin/reports/attendance.pdf",
+  requireAdministrator,
+  async (req, res): Promise<void> => {
+    const range = parsePayrollReportRange(req.query.start, req.query.end);
+    if (!range) {
+      res.status(400).json({ error: "Selecciona un rango de fechas válido." });
+      return;
+    }
+    const report = await buildPayrollAttendanceReport(range);
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="farcheck-rd-asistencia-${range.startDate}-${range.endDate}.pdf"`,
+      "Cache-Control": "no-store, private",
+    });
+    res.send(payrollReportPdf(report));
+  },
+);
+
+router.get(
+  "/admin/reports/attendance.xml",
+  requireAdministrator,
+  async (req, res): Promise<void> => {
+    const range = parsePayrollReportRange(req.query.start, req.query.end);
+    if (!range) {
+      res.status(400).json({ error: "Selecciona un rango de fechas válido." });
+      return;
+    }
+    const report = await buildPayrollAttendanceReport(range);
+    res.set({
+      "Content-Type": "application/xml; charset=utf-8",
+      "Content-Disposition": `attachment; filename="farcheck-rd-asistencia-${range.startDate}-${range.endDate}.xml"`,
+      "Cache-Control": "no-store, private",
+    });
+    res.send(payrollReportXml(report));
   },
 );
 

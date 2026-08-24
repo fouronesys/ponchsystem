@@ -277,3 +277,13 @@ export type ListAttendanceEventsParams = {
 date?: string;
 };
 
+export type ExportAttendancePdfParams = {
+start: string;
+end: string;
+};
+
+export type ExportAttendanceXmlParams = {
+start: string;
+end: string;
+};
+

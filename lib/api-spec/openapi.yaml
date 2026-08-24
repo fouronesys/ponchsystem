@@ -206,6 +206,61 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AttendanceEvent"
+  /admin/reports/attendance.pdf:
+    get:
+      operationId: exportAttendancePdf
+      tags: [admin]
+      summary: Download an attendance payroll report as PDF
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Attendance report PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid report date range
+  /admin/reports/attendance.xml:
+    get:
+      operationId: exportAttendanceXml
+      tags: [admin]
+      summary: Download an attendance payroll report as XML
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Attendance report XML
+          content:
+            application/xml:
+              schema:
+                type: string
+        "400":
+          description: Invalid report date range
   /admin/summary:
     get:
       operationId: getAttendanceSummary

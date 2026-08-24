@@ -17,6 +17,8 @@ export * from './employee';
 export * from './employeeCreateInput';
 export * from './employeeRole';
 export * from './employeeUpdateInput';
+export * from './exportAttendancePdfParams';
+export * from './exportAttendanceXmlParams';
 export * from './healthStatus';
 export * from './listAttendanceEventsParams';
 export * from './loginInput';
