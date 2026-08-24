@@ -75,6 +75,8 @@ function migrateLegacyExternalIdentitySchema() {
         profile_photo_path TEXT,
         role TEXT NOT NULL DEFAULT 'employee',
         active INTEGER NOT NULL DEFAULT 1,
+        employment_start_date TEXT NOT NULL DEFAULT '1970-01-01',
+        employment_end_date TEXT,
         created_at INTEGER NOT NULL
       );
       CREATE UNIQUE INDEX employees_username_unique ON employees (username);
@@ -121,6 +123,8 @@ sqlite.exec(`
     profile_photo_path TEXT,
     role TEXT NOT NULL DEFAULT 'employee',
     active INTEGER NOT NULL DEFAULT 1,
+    employment_start_date TEXT NOT NULL DEFAULT '1970-01-01',
+    employment_end_date TEXT,
     created_at INTEGER NOT NULL
   );
   CREATE UNIQUE INDEX IF NOT EXISTS employees_username_unique ON employees (username);
@@ -249,6 +253,21 @@ for (const [column, definition] of [
   if (!tableColumns("attendance_events").has(column)) {
     sqlite.exec(`ALTER TABLE attendance_events ADD COLUMN ${column} ${definition}`);
   }
+}
+for (const [column, definition] of [
+  ["employment_start_date", "TEXT NOT NULL DEFAULT '1970-01-01'"],
+  ["employment_end_date", "TEXT"],
+] as const) {
+  if (!tableColumns("employees").has(column)) {
+    sqlite.exec(`ALTER TABLE employees ADD COLUMN ${column} ${definition}`);
+  }
+}
+if (tableColumns("employees").has("employment_start_date")) {
+  sqlite.exec(`
+    UPDATE employees
+    SET employment_start_date = strftime('%Y-%m-%d', created_at / 1000, 'unixepoch', '-5 hours')
+    WHERE employment_start_date = '1970-01-01'
+  `);
 }
 export const db = drizzle(sqlite, { schema });
 

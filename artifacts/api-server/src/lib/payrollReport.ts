@@ -4,7 +4,7 @@ import {
   employeesTable,
   type Employee,
 } from "@workspace/db";
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, gte, isNull, lte, lt, or } from "drizzle-orm";
 import {
   attendanceTimingStatus,
   getWeeklySchedule,
@@ -172,7 +172,15 @@ export async function buildPayrollAttendanceReport(
     db
       .select()
       .from(employeesTable)
-      .where(eq(employeesTable.active, true))
+      .where(
+        and(
+          lte(employeesTable.employmentStartDate, range.endDate),
+          or(
+            isNull(employeesTable.employmentEndDate),
+            gte(employeesTable.employmentEndDate, range.startDate),
+          ),
+        ),
+      )
       .orderBy(asc(employeesTable.displayName)),
     db
       .select()
@@ -238,9 +246,16 @@ function buildEmployeeReport(
   eventsByDay: Map<string, Array<typeof attendanceEventsTable.$inferSelect>> | undefined,
 ): PayrollReportEmployee {
   const days = dates.map((date) => {
-    const scheduleDay = scheduleDayForDate(scheduleDays, dateAtBogotaMidnight(date));
+    const employedOnDate =
+      date >= employee.employmentStartDate &&
+      (!employee.employmentEndDate || date <= employee.employmentEndDate);
+    const scheduleDay = employedOnDate
+      ? scheduleDayForDate(scheduleDays, dateAtBogotaMidnight(date))
+      : undefined;
     const scheduled = Boolean(scheduleDay?.startTime && scheduleDay.endTime);
-    const { checkIn, checkOut } = firstDailyPair(eventsByDay?.get(date) ?? []);
+    const { checkIn, checkOut } = employedOnDate
+      ? firstDailyPair(eventsByDay?.get(date) ?? [])
+      : { checkIn: null, checkOut: null };
     const checkInTiming = checkIn
       ? attendanceTimingStatus("check_in", checkIn.occurredAt, scheduleDay)
       : null;

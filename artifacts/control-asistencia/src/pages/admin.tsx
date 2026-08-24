@@ -322,6 +322,8 @@ type EmployeeRecord = {
   phone: string | null;
   jobTitle: string | null;
   active: boolean;
+  employmentStartDate: string;
+  employmentEndDate: string | null;
   role: "admin" | "employee";
   profilePhotoUrl: string | null;
   createdAt: string;
@@ -365,6 +367,8 @@ function EmployeeManager() {
           email: form.get("email"),
           phone: form.get("phone"),
           jobTitle: form.get("jobTitle"),
+           employmentStartDate: form.get("employmentStartDate"),
+           employmentEndDate: form.get("employmentEndDate") || null,
           profilePhoto,
         }),
       });
@@ -404,6 +408,8 @@ function EmployeeManager() {
             <Input name="email" type="email" placeholder="Correo (opcional)" />
             <Input name="phone" placeholder="Teléfono (opcional)" />
             <Input name="jobTitle" placeholder="Cargo (opcional)" />
+            <label className="text-sm font-medium">Inicio laboral<Input required name="employmentStartDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="mt-1" /></label>
+            <label className="text-sm font-medium">Fin laboral (opcional)<Input name="employmentEndDate" type="date" className="mt-1" /></label>
             <Input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp" />
             <div className="md:col-span-2"><Button disabled={saving}>{saving ? "Creando…" : "Crear empleado"}</Button></div>
           </form>
