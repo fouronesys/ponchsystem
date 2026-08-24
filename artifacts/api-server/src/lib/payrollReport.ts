@@ -401,7 +401,7 @@ function makePdf(pages: string[]): Buffer {
   const objects: string[] = [];
   const pageIds: number[] = [];
   const contentIds: number[] = [];
-  let nextId = 4;
+  let nextId = 5;
   for (const _page of pages) {
     pageIds.push(nextId++);
     contentIds.push(nextId++);
@@ -412,9 +412,6 @@ function makePdf(pages: string[]): Buffer {
   objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
 
   pages.forEach((page, index) => {
-    const content = `BT\n/F1 8 Tf\n46 755 Td\n${page.map((line, lineIndex) => (
-      `${lineIndex ? "0 -15 Td\n" : ""}(${pdfText(line)}) Tj`
-    )).join("\n")}\nET`;
     const designedContent = page;
     const pageId = pageIds[index]!;
     const contentId = contentIds[index]!;
