@@ -18,6 +18,7 @@ function toEmployeeResponse(employee: typeof employeesTable.$inferSelect) {
     email: employee.email,
     phone: employee.phone,
     jobTitle: employee.jobTitle,
+    department: employee.department,
     active: employee.active,
     employmentStartDate: employee.employmentStartDate,
     employmentEndDate: employee.employmentEndDate,
@@ -73,6 +74,7 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
         email: optionalText(req.body?.email),
         phone: optionalText(req.body?.phone),
         jobTitle: optionalText(req.body?.jobTitle),
+        department: optionalText(req.body?.department),
         profilePhotoPath,
         role: "employee",
         active: true,
@@ -136,7 +138,7 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
     if (typeof req.body?.displayName === "string" && req.body.displayName.trim()) {
       values.displayName = req.body.displayName.trim();
     }
-    for (const field of ["documentNumber", "email", "phone", "jobTitle"] as const) {
+    for (const field of ["documentNumber", "email", "phone", "jobTitle", "department"] as const) {
       if (field in (req.body ?? {})) values[field] = optionalText(req.body[field]);
     }
     if (typeof req.body?.password === "string" && req.body.password) {

@@ -15,6 +15,11 @@ export interface BulkWeeklyScheduleInput {
      */
   employeeIds: string[];
   /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  department?: string;
+  /**
      * @minItems 7
      * @maxItems 7
      */

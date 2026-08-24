@@ -248,6 +248,7 @@ export const ListEmployeesResponseItem = zod.object({
   "email": zod.string().nullable(),
   "phone": zod.string().nullable(),
   "jobTitle": zod.string().nullable(),
+  "department": zod.string().nullable(),
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
@@ -274,6 +275,8 @@ export const createEmployeeBodyPhoneMax = 80;
 
 export const createEmployeeBodyJobTitleMax = 120;
 
+export const createEmployeeBodyDepartmentMax = 120;
+
 export const createEmployeeBodyProfilePhotoMax = 3000000;
 
 
@@ -286,6 +289,7 @@ export const CreateEmployeeBody = zod.object({
   "email": zod.string().max(createEmployeeBodyEmailMax).optional(),
   "phone": zod.string().max(createEmployeeBodyPhoneMax).optional(),
   "jobTitle": zod.string().max(createEmployeeBodyJobTitleMax).optional(),
+  "department": zod.string().max(createEmployeeBodyDepartmentMax).optional(),
   "profilePhoto": zod.string().max(createEmployeeBodyProfilePhotoMax).optional()
 })
 
@@ -297,6 +301,7 @@ export const CreateEmployeeResponse = zod.object({
   "email": zod.string().nullable(),
   "phone": zod.string().nullable(),
   "jobTitle": zod.string().nullable(),
+  "department": zod.string().nullable(),
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
@@ -326,6 +331,7 @@ export const UpdateEmployeeBody = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "jobTitle": zod.string().nullish(),
+  "department": zod.string().nullish(),
   "password": zod.string().min(updateEmployeeBodyPasswordMin).max(updateEmployeeBodyPasswordMax).optional(),
   "profilePhoto": zod.string().max(updateEmployeeBodyProfilePhotoMax).optional(),
   "active": zod.boolean().optional()
@@ -339,6 +345,7 @@ export const UpdateEmployeeResponse = zod.object({
   "email": zod.string().nullable(),
   "phone": zod.string().nullable(),
   "jobTitle": zod.string().nullable(),
+  "department": zod.string().nullable(),
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
@@ -463,6 +470,8 @@ export const UpdateEmployeeWeeklyScheduleResponse = zod.object({
 
 export const applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax = 200;
 
+export const applyWeeklyScheduleToEmployeesBodyDepartmentMax = 120;
+
 export const applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMin = 0;
 export const applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMax = 6;
 
@@ -477,6 +486,7 @@ export const applyWeeklyScheduleToEmployeesBodyDaysMax = 7;
 
 export const ApplyWeeklyScheduleToEmployeesBody = zod.object({
   "employeeIds": zod.array(zod.string().min(1)).min(1).max(applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax),
+  "department": zod.string().min(1).max(applyWeeklyScheduleToEmployeesBodyDepartmentMax).optional(),
   "days": zod.array(zod.object({
   "dayOfWeek": zod.number().min(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMin).max(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMax),
   "startTime": zod.string().regex(applyWeeklyScheduleToEmployeesBodyDaysItemStartTimeRegExp).nullable(),

@@ -30,6 +30,8 @@ export interface EmployeeCreateInput {
   phone?: string;
   /** @maxLength 120 */
   jobTitle?: string;
+  /** @maxLength 120 */
+  department?: string;
   /** @maxLength 3000000 */
   profilePhoto?: string;
 }

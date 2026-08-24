@@ -120,6 +120,7 @@ sqlite.exec(`
     email TEXT,
     phone TEXT,
     job_title TEXT,
+    department TEXT,
     profile_photo_path TEXT,
     role TEXT NOT NULL DEFAULT 'employee',
     active INTEGER NOT NULL DEFAULT 1,
@@ -257,6 +258,7 @@ for (const [column, definition] of [
 for (const [column, definition] of [
   ["employment_start_date", "TEXT NOT NULL DEFAULT '1970-01-01'"],
   ["employment_end_date", "TEXT"],
+  ["department", "TEXT"],
 ] as const) {
   if (!tableColumns("employees").has(column)) {
     sqlite.exec(`ALTER TABLE employees ADD COLUMN ${column} ${definition}`);

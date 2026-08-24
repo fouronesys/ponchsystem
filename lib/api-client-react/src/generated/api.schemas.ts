@@ -169,6 +169,8 @@ export interface Employee {
   phone: string | null;
   /** @nullable */
   jobTitle: string | null;
+  /** @nullable */
+  department: string | null;
   active: boolean;
   role: EmployeeRole;
   /** @nullable */
@@ -200,6 +202,8 @@ export interface EmployeeCreateInput {
   phone?: string;
   /** @maxLength 120 */
   jobTitle?: string;
+  /** @maxLength 120 */
+  department?: string;
   /** @maxLength 3000000 */
   profilePhoto?: string;
 }
@@ -218,6 +222,8 @@ export interface EmployeeUpdateInput {
   phone?: string | null;
   /** @nullable */
   jobTitle?: string | null;
+  /** @nullable */
+  department?: string | null;
   /**
      * @minLength 8
      * @maxLength 256
@@ -280,6 +286,11 @@ export interface BulkWeeklyScheduleInput {
      * @items.minLength 1
      */
   employeeIds: string[];
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  department?: string;
   /**
      * @minItems 7
      * @maxItems 7

@@ -567,11 +567,12 @@ components:
         email: { type: ["string", "null"] }
         phone: { type: ["string", "null"] }
         jobTitle: { type: ["string", "null"] }
+        department: { type: ["string", "null"] }
         active: { type: boolean }
         role: { type: string, enum: [admin, employee] }
         profilePhotoUrl: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
-      required: [id, username, displayName, documentNumber, email, phone, jobTitle, active, role, profilePhotoUrl, createdAt]
+      required: [id, username, displayName, documentNumber, email, phone, jobTitle, department, active, role, profilePhotoUrl, createdAt]
     EmployeeCreateInput:
       type: object
       properties:
@@ -582,6 +583,7 @@ components:
         email: { type: string, maxLength: 160 }
         phone: { type: string, maxLength: 80 }
         jobTitle: { type: string, maxLength: 120 }
+        department: { type: string, maxLength: 120 }
         profilePhoto: { type: string, maxLength: 3000000 }
       required: [username, password, displayName]
     EmployeeUpdateInput:
@@ -592,6 +594,7 @@ components:
         email: { type: ["string", "null"] }
         phone: { type: ["string", "null"] }
         jobTitle: { type: ["string", "null"] }
+        department: { type: ["string", "null"] }
         password: { type: string, minLength: 8, maxLength: 256 }
         profilePhoto: { type: string, maxLength: 3000000 }
         active: { type: boolean }
@@ -636,6 +639,10 @@ components:
           items:
             type: string
             minLength: 1
+        department:
+          type: string
+          minLength: 1
+          maxLength: 120
         days:
           type: array
           minItems: 7

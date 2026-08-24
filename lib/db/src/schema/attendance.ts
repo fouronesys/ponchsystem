@@ -20,6 +20,7 @@ export const employeesTable = sqliteTable(
     email: text("email"),
     phone: text("phone"),
     jobTitle: text("job_title"),
+    department: text("department"),
     profilePhotoPath: text("profile_photo_path"),
     role: text("role").notNull().default("employee"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
@@ -31,6 +32,7 @@ export const employeesTable = sqliteTable(
   },
   (table) => [
     uniqueIndex("employees_username_unique").on(table.username),
+    index("employees_department_idx").on(table.department),
   ],
 );
 
