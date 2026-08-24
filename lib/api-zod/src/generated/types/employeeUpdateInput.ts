@@ -20,6 +20,8 @@ export interface EmployeeUpdateInput {
   phone?: string | null;
   /** @nullable */
   jobTitle?: string | null;
+  /** @nullable */
+  department?: string | null;
   /**
      * @minLength 8
      * @maxLength 256

@@ -32,6 +32,7 @@ export type PayrollReportEmployee = {
   displayName: string;
   documentNumber: string | null;
   jobTitle: string | null;
+  department: string | null;
   expectedDays: number;
   absenceDays: number;
   incompleteDays: number;
@@ -286,6 +287,7 @@ function buildEmployeeReport(
     displayName: employee.displayName,
     documentNumber: employee.documentNumber,
     jobTitle: employee.jobTitle,
+    department: employee.department,
     expectedDays: days.filter((day) => day.scheduledStart && day.scheduledEnd).length,
     absenceDays: days.filter((day) => day.state === "absent").length,
     incompleteDays: days.filter((day) => day.state === "incomplete").length,
@@ -322,7 +324,7 @@ export function payrollReportXml(report: PayrollAttendanceReport): string {
   ];
   for (const employee of report.employees) {
     lines.push(
-      `    <employee id="${xml(employee.id)}" displayName="${xml(employee.displayName)}"${xmlAttribute("documentNumber", employee.documentNumber)}${xmlAttribute("jobTitle", employee.jobTitle)}>`,
+      `    <employee id="${xml(employee.id)}" displayName="${xml(employee.displayName)}"${xmlAttribute("documentNumber", employee.documentNumber)}${xmlAttribute("jobTitle", employee.jobTitle)}${xmlAttribute("department", employee.department)}>`,
       `      <summary expectedDays="${employee.expectedDays}" absenceDays="${employee.absenceDays}" incompleteDays="${employee.incompleteDays}" workedMinutes="${employee.workedMinutes}" lateEntries="${employee.lateEntries}" outsideShiftEvents="${employee.outsideShiftEvents}"/>`,
       "      <days>",
     );
@@ -471,7 +473,7 @@ export function payrollReportPdf(report: PayrollAttendanceReport): Buffer {
   summary += pdfLabel(450, 522, `Incompletas: ${report.totals.incompleteDays}`, 10, "F2", SLATE);
   summary += pdfLabel(46, 480, "Resumen por empleado", 12, "F2", NAVY);
   summary += pdfRect(46, 450, 520, 22, NAVY);
-  summary += pdfLabel(56, 457, "Empleado", 8, "F2", [1, 1, 1]);
+  summary += pdfLabel(56, 457, "Empleado / departamento", 8, "F2", [1, 1, 1]);
   summary += pdfLabel(286, 457, "Esperadas", 8, "F2", [1, 1, 1]);
   summary += pdfLabel(358, 457, "Ausencias", 8, "F2", [1, 1, 1]);
   summary += pdfLabel(430, 457, "Horas", 8, "F2", [1, 1, 1]);
@@ -480,7 +482,8 @@ export function payrollReportPdf(report: PayrollAttendanceReport): Buffer {
     const y = 430 - index * 22;
     if (index % 2 === 0) summary += pdfRect(46, y - 6, 520, 22, [0.97, 0.98, 0.99]);
     const alerts = employee.lateEntries + employee.outsideShiftEvents + employee.incompleteDays;
-    summary += pdfLabel(56, y, employee.displayName, 8, "F1", SLATE);
+    summary += pdfLabel(56, y + 5, employee.displayName, 8, "F1", SLATE);
+    summary += pdfLabel(56, y - 5, employee.department ?? "Sin departamento", 7, "F1", MUTED);
     summary += pdfLabel(296, y, String(employee.expectedDays), 8, "F1", SLATE);
     summary += pdfLabel(368, y, String(employee.absenceDays), 8, "F1", employee.absenceDays ? RED : SLATE);
     summary += pdfLabel(430, y, duration(employee.workedMinutes), 8, "F1", SLATE);
@@ -495,7 +498,7 @@ export function payrollReportPdf(report: PayrollAttendanceReport): Buffer {
     const pageNumber = employeePageIndex + 2;
     let page = pageHeader(pageNumber, pageCount);
     page += pdfLabel(46, 710, employee.displayName, 18, "F2", NAVY);
-    page += pdfLabel(46, 690, `${employee.jobTitle ? `${employee.jobTitle} · ` : ""}${employee.documentNumber ? `Documento: ${employee.documentNumber}` : "Sin documento"}`, 9, "F1", MUTED);
+    page += pdfLabel(46, 690, `${employee.department ? `${employee.department} · ` : ""}${employee.jobTitle ? `${employee.jobTitle} · ` : ""}${employee.documentNumber ? `Documento: ${employee.documentNumber}` : "Sin documento"}`, 9, "F1", MUTED);
     page += pdfLabel(420, 700, `Horas: ${duration(employee.workedMinutes)}`, 9, "F2", GREEN);
     page += pdfLabel(420, 685, `Ausencias: ${employee.absenceDays}`, 9, "F2", employee.absenceDays ? RED : SLATE);
     page += pdfRect(46, 650, 520, 24, NAVY);

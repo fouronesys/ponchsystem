@@ -321,6 +321,7 @@ type EmployeeRecord = {
   email: string | null;
   phone: string | null;
   jobTitle: string | null;
+  department: string | null;
   active: boolean;
   employmentStartDate: string;
   employmentEndDate: string | null;
@@ -334,6 +335,7 @@ function EmployeeManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
 
   const refresh = async () => {
     setLoading(true);
@@ -367,6 +369,7 @@ function EmployeeManager() {
           email: form.get("email"),
           phone: form.get("phone"),
           jobTitle: form.get("jobTitle"),
+          department: form.get("department"),
            employmentStartDate: form.get("employmentStartDate"),
            employmentEndDate: form.get("employmentEndDate") || null,
           profilePhoto,
@@ -393,6 +396,23 @@ function EmployeeManager() {
       setError(reason instanceof Error ? reason.message : "No pudimos actualizar el empleado.");
     }
   };
+  const updateDepartment = async (employee: EmployeeRecord, department: string) => {
+    const normalized = department.trim();
+    if (normalized === (employee.department ?? "")) return;
+    try {
+      const updated = await apiFetch<EmployeeRecord>(`/admin/employees/${employee.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ department: normalized || null }),
+      });
+      setEmployees((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos actualizar el departamento.");
+    }
+  };
+  const departments = [...new Set(employees.map((employee) => employee.department).filter(Boolean) as string[])].sort();
+  const visibleEmployees = departmentFilter === "all"
+    ? employees
+    : employees.filter((employee) => employee.department === departmentFilter);
 
   return (
     <section className="space-y-5">
@@ -408,6 +428,8 @@ function EmployeeManager() {
             <Input name="email" type="email" placeholder="Correo (opcional)" />
             <Input name="phone" placeholder="Teléfono (opcional)" />
             <Input name="jobTitle" placeholder="Cargo (opcional)" />
+            <Input name="department" placeholder="Departamento (opcional)" list="department-options" />
+            <datalist id="department-options">{departments.map((department) => <option key={department} value={department} />)}</datalist>
             <label className="text-sm font-medium">Inicio laboral<Input required name="employmentStartDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="mt-1" /></label>
             <label className="text-sm font-medium">Fin laboral (opcional)<Input name="employmentEndDate" type="date" className="mt-1" /></label>
             <Input name="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp" />
@@ -419,11 +441,18 @@ function EmployeeManager() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Directorio de empleados</CardTitle><CardDescription>Desactivar una cuenta impide nuevos accesos sin eliminar su historial.</CardDescription></div><Button variant="outline" size="sm" onClick={() => void refresh()}><RotateCw className="mr-2 h-4 w-4" />Actualizar</Button></CardHeader>
         <CardContent>
-          {loading ? <Skeleton className="h-24 w-full" /> : employees.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay empleados registrados.</p> : (
+           {loading ? <Skeleton className="h-24 w-full" /> : employees.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay empleados registrados.</p> : (
             <div className="space-y-3">
-              {employees.map((employee) => <div key={employee.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
+               <label className="block max-w-sm text-sm font-medium">Filtrar por departamento
+                 <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                   <option value="all">Todos los departamentos</option>
+                   {departments.map((department) => <option key={department} value={department}>{department}</option>)}
+                 </select>
+               </label>
+               {visibleEmployees.length === 0 ? <p className="py-5 text-center text-sm text-muted-foreground">No hay empleados en este departamento.</p> : visibleEmployees.map((employee) => <div key={employee.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
                 {employee.profilePhotoUrl ? <img src={employee.profilePhotoUrl} alt={`Foto de ${employee.displayName}`} className="h-11 w-11 rounded-full object-cover" /> : <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary"><UserRound className="h-5 w-5 text-muted-foreground" /></div>}
-                <div className="min-w-[160px] flex-1"><p className="font-medium">{employee.displayName}</p><p className="text-xs text-muted-foreground">@{employee.username}{employee.jobTitle ? ` · ${employee.jobTitle}` : ""}</p></div>
+                 <div className="min-w-[160px] flex-1"><p className="font-medium">{employee.displayName}</p><p className="text-xs text-muted-foreground">@{employee.username}{employee.jobTitle ? ` · ${employee.jobTitle}` : ""}</p></div>
+                 <Input defaultValue={employee.department ?? ""} placeholder="Departamento" list="department-options" className="w-44" onBlur={(event) => void updateDepartment(employee, event.target.value)} aria-label={`Departamento de ${employee.displayName}`} />
                 <Badge variant={employee.active ? "success" : "secondary"}>{employee.active ? "Activa" : "Desactivada"}</Badge>
                 {employee.role !== "admin" && <Button size="sm" variant="outline" onClick={() => void toggleActive(employee)}>{employee.active ? <><UserRoundX className="mr-2 h-4 w-4" />Desactivar</> : <><UserRound className="mr-2 h-4 w-4" />Activar</>}</Button>}
               </div>)}
@@ -456,6 +485,7 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkConfirmationOpen, setBulkConfirmationOpen] = useState(false);
   const [bulkResult, setBulkResult] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
 
   useEffect(() => {
     if (!employeeId && employees[0]) {
@@ -521,7 +551,12 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
   };
 
   const selectedEmployee = employees.find((employee) => employee.id === employeeId);
-  const targetableEmployees = employees.filter((employee) => employee.id !== employeeId && employee.active);
+  const departments = [...new Set(employees.map((employee) => employee.department).filter(Boolean) as string[])].sort();
+  const targetableEmployees = employees.filter((employee) =>
+    employee.id !== employeeId &&
+    employee.active &&
+    (departmentFilter === "all" || employee.department === departmentFilter),
+  );
   const allTargetsSelected = targetableEmployees.length > 0 && targetEmployeeIds.length === targetableEmployees.length;
   const toggleTarget = (targetId: string) => {
     setTargetEmployeeIds((current) => current.includes(targetId)
@@ -565,12 +600,24 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
       <CardContent className="space-y-5">
         {employees.length === 0 ? <p className="text-sm text-muted-foreground">Crea un empleado para asignarle un horario.</p> : (
           <>
+            <div className="grid gap-3 md:grid-cols-2">
             <label className="block max-w-md text-sm font-medium">
               Empleado
               <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
                 {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.displayName} (@{employee.username})</option>)}
               </select>
             </label>
+            <label className="block max-w-md text-sm font-medium">Equipo por departamento
+              <select value={departmentFilter} onChange={(event) => {
+                setDepartmentFilter(event.target.value);
+                setTargetEmployeeIds([]);
+                setBulkConfirmationOpen(false);
+              }} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                <option value="all">Todos los departamentos</option>
+                {departments.map((department) => <option key={department} value={department}>{department}</option>)}
+              </select>
+            </label>
+            </div>
             {selectedEmployee && <p className="text-sm text-muted-foreground">Horario de <span className="font-medium text-foreground">{selectedEmployee.displayName}</span>.</p>}
             {loading || !schedule ? <div className="space-y-3"><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /></div> : (
               <div className="space-y-3">
@@ -609,7 +656,7 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium">{targetEmployeeIds.length} de {targetableEmployees.length} seleccionados</p>
-                      <Button size="sm" variant="outline" onClick={toggleAllTargets}>{allTargetsSelected ? "Limpiar selección" : "Seleccionar todos"}</Button>
+                      <Button size="sm" variant="outline" onClick={toggleAllTargets}>{allTargetsSelected ? "Limpiar selección" : `Seleccionar todo${departmentFilter === "all" ? " el personal activo" : ` el departamento ${departmentFilter}`}`}</Button>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {targetableEmployees.map((employee) => {

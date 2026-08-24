@@ -4,7 +4,7 @@ import {
   UpdateEmployeeWeeklyScheduleBody,
 } from "@workspace/api-zod";
 import { db, employeesTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   type AuthenticatedRequest,
@@ -74,6 +74,14 @@ router.put("/admin/employees/schedules/bulk", requireAdministrator, async (req, 
     res.status(400).json({ error: "La selección o el formato del horario no es válido." });
     return;
   }
+  const departmentEmployeeIds = parsed.data.department
+    ? (await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(and(eq(employeesTable.department, parsed.data.department), eq(employeesTable.active, true))))
+      .map(({ id }) => id)
+    : [];
+  const employeeIds = [...new Set([...parsed.data.employeeIds, ...departmentEmployeeIds])];
   if (new Set(parsed.data.employeeIds).size !== parsed.data.employeeIds.length) {
     res.status(400).json({ error: "No puedes repetir empleados en la selección." });
     return;
@@ -87,16 +95,16 @@ router.put("/admin/employees/schedules/bulk", requireAdministrator, async (req, 
   const existing = await db
     .select({ id: employeesTable.id })
     .from(employeesTable)
-    .where(inArray(employeesTable.id, parsed.data.employeeIds));
-  if (existing.length !== parsed.data.employeeIds.length) {
+    .where(inArray(employeesTable.id, employeeIds));
+  if (existing.length !== employeeIds.length) {
     res.status(404).json({ error: "Uno o más empleados seleccionados no existen." });
     return;
   }
 
-  await replaceWeeklySchedules(parsed.data.employeeIds, parsed.data.days);
+  await replaceWeeklySchedules(employeeIds, parsed.data.days);
   res.json({
-    updatedEmployeeIds: parsed.data.employeeIds,
-    updatedCount: parsed.data.employeeIds.length,
+    updatedEmployeeIds: employeeIds,
+    updatedCount: employeeIds.length,
   });
 });
 

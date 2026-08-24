@@ -19,6 +19,8 @@ export interface Employee {
   phone: string | null;
   /** @nullable */
   jobTitle: string | null;
+  /** @nullable */
+  department: string | null;
   active: boolean;
   role: EmployeeRole;
   /** @nullable */
