@@ -44,6 +44,12 @@ import {
 } from "../lib/qrSecurity";
 import { removeImage, saveImage } from "../lib/imageStorage";
 import { logger } from "../lib/logger";
+import {
+  attendanceTimingStatus,
+  getWeeklySchedule,
+  scheduleDayForDate,
+  type AttendanceTimingStatus,
+} from "../lib/weeklySchedule";
 
 const router: IRouter = Router();
 const QR_CLEANUP_INTERVAL_MS = 60_000;
@@ -83,7 +89,10 @@ function bogotaDay(value: Date): string {
 function eventResponse(
   event: typeof attendanceEventsTable.$inferSelect,
   employee: Employee,
+  scheduleDays: Array<{ dayOfWeek: number; startTime: string | null; endTime: string | null }> = [],
 ) {
+  const scheduleDay = scheduleDayForDate(scheduleDays, event.occurredAt);
+  const timingStatus: AttendanceTimingStatus = attendanceTimingStatus(event.type as "check_in" | "check_out", event.occurredAt, scheduleDay);
   return {
     id: event.id,
     employeeId: event.employeeId,
@@ -94,6 +103,10 @@ function eventResponse(
     deviceLabel: event.deviceLabel,
     selfieUrl: event.selfiePath ? `/api/media/${event.selfiePath}` : null,
     loginAt: event.loginAt,
+    timingStatus,
+    scheduledTime: scheduleDay
+      ? event.type === "check_in" ? scheduleDay.startTime : scheduleDay.endTime
+      : null,
   };
 }
 
@@ -201,6 +214,13 @@ router.get(
     const latest = todayEvents[0];
     const checkIn = todayEvents.find((event) => event.type === "check_in");
     const checkOut = todayEvents.find((event) => event.type === "check_out");
+    const schedule = await getWeeklySchedule(employee.id);
+    const checkInTimingStatus = checkIn
+      ? attendanceTimingStatus("check_in", checkIn.occurredAt, scheduleDayForDate(schedule.days, checkIn.occurredAt))
+      : null;
+    const checkOutTimingStatus = checkOut
+      ? attendanceTimingStatus("check_out", checkOut.occurredAt, scheduleDayForDate(schedule.days, checkOut.occurredAt))
+      : null;
     const endedAt = checkOut?.occurredAt ?? new Date();
     const workedMinutes = checkIn
       ? Math.max(0, Math.floor((endedAt.getTime() - checkIn.occurredAt.getTime()) / 60_000))
@@ -218,6 +238,8 @@ router.get(
         checkIn: checkIn?.occurredAt ?? null,
         checkOut: checkOut?.occurredAt ?? null,
         workedMinutes,
+          checkInTimingStatus,
+          checkOutTimingStatus,
       }),
     );
   },
@@ -317,7 +339,8 @@ router.post(
     }
 
     clearScanAttempts(scanKey);
-    res.json(ScanAttendanceQrResponse.parse(eventResponse(event, employee)));
+    const schedule = await getWeeklySchedule(employee.id);
+    res.json(ScanAttendanceQrResponse.parse(eventResponse(event, employee, schedule.days)));
   },
 );
 
@@ -465,9 +488,13 @@ router.get(
       .orderBy(desc(attendanceEventsTable.occurredAt))
       .limit(100);
     const filterDay = parsed.data.date ? bogotaDay(parsed.data.date) : null;
+    const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
+    await Promise.all([...new Set(rows.map((row) => row.employee.id))].map(async (employeeId) => {
+      schedules.set(employeeId, (await getWeeklySchedule(employeeId)).days);
+    }));
     const events = rows
       .filter((row) => !filterDay || bogotaDay(row.event.occurredAt) === filterDay)
-      .map((row) => eventResponse(row.event, row.employee));
+      .map((row) => eventResponse(row.event, row.employee, schedules.get(row.employee.id)));
 
     res.json(ListAttendanceEventsResponse.parse(events));
   },
@@ -503,17 +530,14 @@ router.get(
     const present = [...latestByEmployee.values()].filter(
       (row) => row.event.type === "check_in",
     );
-    const late = todayRows.filter((row) => {
-      if (row.event.type !== "check_in") return false;
-      const hour = Number(
-        new Intl.DateTimeFormat("en-US", {
-          timeZone: "America/Bogota",
-          hour: "2-digit",
-          hourCycle: "h23",
-        }).format(row.event.occurredAt),
-      );
-      return hour >= 9;
-    });
+     const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
+     await Promise.all([...new Set(todayRows.map((row) => row.employee.id))].map(async (employeeId) => {
+       schedules.set(employeeId, (await getWeeklySchedule(employeeId)).days);
+     }));
+     const late = todayRows.filter((row) =>
+       row.event.type === "check_in" &&
+       attendanceTimingStatus("check_in", row.event.occurredAt, scheduleDayForDate(schedules.get(row.employee.id) ?? [], row.event.occurredAt)) === "late"
+     );
     const last = todayRows[0];
 
     res.json(
@@ -524,7 +548,7 @@ router.get(
         checkedOut: [...latestByEmployee.values()].filter(
           (row) => row.event.type === "check_out",
         ).length,
-        lastEvent: last ? eventResponse(last.event, last.employee) : null,
+         lastEvent: last ? eventResponse(last.event, last.employee, schedules.get(last.employee.id)) : null,
       }),
     );
   },

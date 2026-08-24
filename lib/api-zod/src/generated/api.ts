@@ -26,7 +26,9 @@ export const GetTodayAttendanceResponse = zod.object({
   "state": zod.enum(['out', 'checked_in', 'checked_out']),
   "checkIn": zod.coerce.date().nullable(),
   "checkOut": zod.coerce.date().nullable(),
-  "workedMinutes": zod.number()
+  "workedMinutes": zod.number(),
+  "checkInTimingStatus": zod.union([zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),zod.null()]),
+  "checkOutTimingStatus": zod.union([zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),zod.null()])
 })
 
 
@@ -103,7 +105,9 @@ export const ScanAttendanceQrResponse = zod.object({
   "location": zod.string().nullable(),
   "deviceLabel": zod.string().nullable(),
   "selfieUrl": zod.string().nullable(),
-  "loginAt": zod.coerce.date().nullable()
+  "loginAt": zod.coerce.date().nullable(),
+  "timingStatus": zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),
+  "scheduledTime": zod.string().nullable()
 })
 
 
@@ -180,7 +184,9 @@ export const ListAttendanceEventsResponseItem = zod.object({
   "location": zod.string().nullable(),
   "deviceLabel": zod.string().nullable(),
   "selfieUrl": zod.string().nullable(),
-  "loginAt": zod.coerce.date().nullable()
+  "loginAt": zod.coerce.date().nullable(),
+  "timingStatus": zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),
+  "scheduledTime": zod.string().nullable()
 })
 export const ListAttendanceEventsResponse = zod.array(ListAttendanceEventsResponseItem)
 
@@ -202,7 +208,9 @@ export const GetAttendanceSummaryResponse = zod.object({
   "location": zod.string().nullable(),
   "deviceLabel": zod.string().nullable(),
   "selfieUrl": zod.string().nullable(),
-  "loginAt": zod.coerce.date().nullable()
+  "loginAt": zod.coerce.date().nullable(),
+  "timingStatus": zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),
+  "scheduledTime": zod.string().nullable()
 }),zod.null()])
 })
 

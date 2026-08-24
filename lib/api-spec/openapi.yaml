@@ -385,7 +385,11 @@ components:
         loginAt:
           type: ["string", "null"]
           format: date-time
-      required: [id, employeeId, employeeName, type, timestamp, location, deviceLabel, selfieUrl, loginAt]
+        timingStatus:
+          $ref: "#/components/schemas/AttendanceTimingStatus"
+        scheduledTime:
+          type: ["string", "null"]
+      required: [id, employeeId, employeeName, type, timestamp, location, deviceLabel, selfieUrl, loginAt, timingStatus, scheduledTime]
     AttendanceStatus:
       type: object
       properties:
@@ -401,7 +405,18 @@ components:
           type: ["string", "null"]
           format: date-time
         workedMinutes: { type: number }
-      required: [employeeId, employeeName, state, checkIn, checkOut, workedMinutes]
+        checkInTimingStatus:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceTimingStatus"
+            - type: "null"
+        checkOutTimingStatus:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceTimingStatus"
+            - type: "null"
+      required: [employeeId, employeeName, state, checkIn, checkOut, workedMinutes, checkInTimingStatus, checkOutTimingStatus]
+    AttendanceTimingStatus:
+      type: string
+      enum: [on_time, early, late, outside_shift, day_off]
     QrStatus:
       type: object
       properties:

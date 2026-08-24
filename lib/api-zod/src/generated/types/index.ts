@@ -12,6 +12,7 @@ export * from './attendanceScanInput';
 export * from './attendanceStatus';
 export * from './attendanceStatusState';
 export * from './attendanceSummary';
+export * from './attendanceTimingStatus';
 export * from './employee';
 export * from './employeeCreateInput';
 export * from './employeeRole';

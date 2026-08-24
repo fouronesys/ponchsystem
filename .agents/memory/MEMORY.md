@@ -2,3 +2,4 @@
 - [Docker TypeScript cache](docker-typescript-cache.md) — exclude incremental TypeScript metadata from clean container builds when compiled output is excluded.
 - [HTTP concurrency testing](http-concurrency-testing.md) — coordinate credential-invalidating requests explicitly; native fetch start order is not a processing-order guarantee.
 - [SQLite transaction callbacks](sqlite-transaction-callbacks.md) — Better SQLite transactions must be synchronous; execute statements with `run()` inside the callback.
+- [OpenAPI nullable unions](openapi-nullable-unions.md) — use oneOf with a null schema for nullable refs; Orval otherwise may generate an impossible enum intersection.
