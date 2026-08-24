@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AttendanceEventType } from './attendanceEventType';
+import type { AttendanceTimingStatus } from './attendanceTimingStatus';
 
 export interface AttendanceEvent {
   id: string;
@@ -21,4 +22,7 @@ export interface AttendanceEvent {
   selfieUrl: string | null;
   /** @nullable */
   loginAt: Date | null;
+  timingStatus: AttendanceTimingStatus;
+  /** @nullable */
+  scheduledTime: string | null;
 }

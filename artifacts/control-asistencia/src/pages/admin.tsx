@@ -181,7 +181,7 @@ export default function AdminPage() {
                   <TableRow>
                     <TableHead>Empleado</TableHead>
                     <TableHead>Evento</TableHead>
-                    <TableHead>Hora</TableHead>
+                    <TableHead>Hora / puntualidad</TableHead>
                     <TableHead className="hidden sm:table-cell">Dispositivo</TableHead>
                     <TableHead>Evidencia</TableHead>
                   </TableRow>
@@ -202,7 +202,8 @@ export default function AdminPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {formatTime(event.timestamp)}
+                         <div>{formatTime(event.timestamp)}</div>
+                         <TimingBadge status={event.timingStatus} scheduledTime={event.scheduledTime} />
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                         <div className="flex items-center gap-1.5">
@@ -231,6 +232,24 @@ export default function AdminPage() {
       <EmployeeManager />
     </div>
   );
+}
+
+function TimingBadge({ status, scheduledTime }: { status: string; scheduledTime: string | null }) {
+  const labels: Record<string, string> = {
+    on_time: "A tiempo",
+    early: "Temprano",
+    late: "Tardío",
+    outside_shift: "Fuera de jornada",
+    day_off: "Día libre",
+  };
+  const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+    on_time: "success",
+    early: "warning",
+    late: "warning",
+    outside_shift: "destructive",
+    day_off: "secondary",
+  };
+  return <Badge variant={variants[status] ?? "secondary"} className="mt-1 text-[10px]">{labels[status] ?? status}{scheduledTime ? ` · ${scheduledTime}` : ""}</Badge>;
 }
 
 type EmployeeRecord = {

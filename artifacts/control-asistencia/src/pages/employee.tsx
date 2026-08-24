@@ -20,7 +20,7 @@ export default function EmployeePage() {
   const isCheckedIn = attendance.state === "checked_in";
   const isCheckedOut = attendance.state === "checked_out";
   const worked = `${Math.floor(attendance.workedMinutes / 60)}h ${attendance.workedMinutes % 60}m`;
-  const todaySchedule = weeklySchedule?.days.find((day) => day.dayOfWeek === new Date().getDay());
+  const todaySchedule = weeklySchedule?.days.find((day) => day.dayOfWeek === bogotaDayOfWeek());
 
   return (
     <div className="mx-auto max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -37,6 +37,12 @@ export default function EmployeePage() {
             <TimeBox icon={<LogOut className="h-3.5 w-3.5" />} label="Salida" value={formatTime(attendance.checkOut)} />
           </div>
           {(isCheckedIn || isCheckedOut) && <div className="flex items-center gap-3 rounded-lg border bg-card p-3"><Clock className="h-5 w-5 text-primary" /><div><p className="text-xs font-medium uppercase text-muted-foreground">Tiempo registrado</p><p className="font-semibold">{worked}</p></div></div>}
+            {(attendance.checkInTimingStatus || attendance.checkOutTimingStatus) && (
+              <div className="space-y-2 rounded-lg border bg-secondary/30 p-3 text-sm">
+                {attendance.checkInTimingStatus && <TimingNotice label="Entrada" status={attendance.checkInTimingStatus} />}
+                {attendance.checkOutTimingStatus && <TimingNotice label="Salida" status={attendance.checkOutTimingStatus} />}
+              </div>
+            )}
         </CardContent>
       </Card>
 
@@ -78,4 +84,23 @@ function StatusBadge({ state }: { state: "out" | "checked_in" | "checked_out" })
   if (state === "checked_in") return <Badge variant="success" className="px-3 py-1">En turno</Badge>;
   if (state === "checked_out") return <Badge variant="secondary" className="px-3 py-1">Finalizado</Badge>;
   return <Badge variant="warning" className="px-3 py-1">Ausente</Badge>;
+}
+
+function TimingNotice({ label, status }: { label: string; status: string }) {
+  const labels: Record<string, string> = {
+    on_time: "a tiempo",
+    early: "temprana",
+    late: "tardía",
+    outside_shift: "fuera de jornada",
+    day_off: "en día libre",
+  };
+  return <p><span className="font-medium">{label}:</span> {labels[status] ?? status}. Este registro no se bloqueó.</p>;
+}
+
+function bogotaDayOfWeek(): number {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Bogota",
+    weekday: "short",
+  }).format(new Date());
+  return ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[weekday] ?? 0;
 }

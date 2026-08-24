@@ -12,6 +12,13 @@ export type WeeklyScheduleDayInput = {
   mealEnd: string | null;
 };
 
+export type AttendanceTimingStatus =
+  | "on_time"
+  | "early"
+  | "late"
+  | "outside_shift"
+  | "day_off";
+
 function emptyDay(employeeId: string, dayOfWeek: number) {
   return {
     id: randomUUID(),
@@ -50,9 +57,52 @@ export async function getWeeklySchedule(employeeId: string) {
   return { employeeId, days };
 }
 
-function minutes(value: string): number {
+export function minutes(value: string): number {
   const [hours, minutesValue] = value.split(":").map(Number);
   return hours * 60 + minutesValue;
+}
+
+function bogotaParts(value: Date): { dayOfWeek: number; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Bogota",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+  const dayOfWeek = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[weekday ?? "Sun"];
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+  return { dayOfWeek, minutes: hour * 60 + minute };
+}
+
+export function attendanceTimingStatus(
+  type: "check_in" | "check_out",
+  occurredAt: Date,
+  scheduleDay: Pick<WeeklyScheduleDayInput, "startTime" | "endTime"> | null | undefined,
+): AttendanceTimingStatus {
+  if (!scheduleDay?.startTime || !scheduleDay.endTime) return "day_off";
+  const actual = bogotaParts(occurredAt).minutes;
+  const start = minutes(scheduleDay.startTime);
+  const end = minutes(scheduleDay.endTime);
+  if (type === "check_in") {
+    if (actual < start) return "early";
+    if (actual === start) return "on_time";
+    if (actual <= end) return "late";
+    return "outside_shift";
+  }
+  if (actual < start || actual > end) return "outside_shift";
+  if (actual < end) return "early";
+  if (actual === end) return "on_time";
+  return "late";
+}
+
+export function scheduleDayForDate<T extends Pick<WeeklyScheduleDayInput, "dayOfWeek">>(
+  days: T[],
+  date: Date,
+): T | undefined {
+  return days.find((day) => day.dayOfWeek === bogotaParts(date).dayOfWeek);
 }
 
 export function validateWeeklySchedule(days: WeeklyScheduleDayInput[]): string | null {

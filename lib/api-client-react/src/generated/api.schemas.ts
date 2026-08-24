@@ -30,6 +30,17 @@ export const AttendanceEventType = {
   check_out: 'check_out',
 } as const;
 
+export type AttendanceTimingStatus = typeof AttendanceTimingStatus[keyof typeof AttendanceTimingStatus];
+
+
+export const AttendanceTimingStatus = {
+  on_time: 'on_time',
+  early: 'early',
+  late: 'late',
+  outside_shift: 'outside_shift',
+  day_off: 'day_off',
+} as const;
+
 export interface AttendanceEvent {
   id: string;
   employeeId: string;
@@ -44,6 +55,9 @@ export interface AttendanceEvent {
   selfieUrl: string | null;
   /** @nullable */
   loginAt: string | null;
+  timingStatus: AttendanceTimingStatus;
+  /** @nullable */
+  scheduledTime: string | null;
 }
 
 export type AttendanceStatusState = typeof AttendanceStatusState[keyof typeof AttendanceStatusState];
@@ -64,6 +78,8 @@ export interface AttendanceStatus {
   /** @nullable */
   checkOut: string | null;
   workedMinutes: number;
+  checkInTimingStatus: AttendanceTimingStatus | null;
+  checkOutTimingStatus: AttendanceTimingStatus | null;
 }
 
 export interface QrStatus {

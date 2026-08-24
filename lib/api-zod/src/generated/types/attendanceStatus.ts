@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AttendanceStatusState } from './attendanceStatusState';
+import type { AttendanceTimingStatus } from './attendanceTimingStatus';
 
 export interface AttendanceStatus {
   employeeId: string;
@@ -16,4 +17,6 @@ export interface AttendanceStatus {
   /** @nullable */
   checkOut: Date | null;
   workedMinutes: number;
+  checkInTimingStatus: AttendanceTimingStatus | null;
+  checkOutTimingStatus: AttendanceTimingStatus | null;
 }
