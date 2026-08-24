@@ -13,6 +13,8 @@ export * from './attendanceStatus';
 export * from './attendanceStatusState';
 export * from './attendanceSummary';
 export * from './attendanceTimingStatus';
+export * from './bulkWeeklyScheduleInput';
+export * from './bulkWeeklyScheduleResult';
 export * from './employee';
 export * from './employeeCreateInput';
 export * from './employeeRole';

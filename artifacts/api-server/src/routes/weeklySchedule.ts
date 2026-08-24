@@ -1,6 +1,10 @@
-import { GetEmployeeWeeklyScheduleParams, UpdateEmployeeWeeklyScheduleBody } from "@workspace/api-zod";
+import {
+  ApplyWeeklyScheduleToEmployeesBody,
+  GetEmployeeWeeklyScheduleParams,
+  UpdateEmployeeWeeklyScheduleBody,
+} from "@workspace/api-zod";
 import { db, employeesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   type AuthenticatedRequest,
@@ -10,6 +14,7 @@ import {
 import {
   getWeeklySchedule,
   replaceWeeklySchedule,
+  replaceWeeklySchedules,
   validateWeeklySchedule,
 } from "../lib/weeklySchedule";
 
@@ -61,6 +66,38 @@ router.put("/admin/employees/:id/schedule", requireAdministrator, async (req, re
   }
 
   res.json(await replaceWeeklySchedule(employeeId, parsed.data.days));
+});
+
+router.put("/admin/employees/schedules/bulk", requireAdministrator, async (req, res): Promise<void> => {
+  const parsed = ApplyWeeklyScheduleToEmployeesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "La selección o el formato del horario no es válido." });
+    return;
+  }
+  if (new Set(parsed.data.employeeIds).size !== parsed.data.employeeIds.length) {
+    res.status(400).json({ error: "No puedes repetir empleados en la selección." });
+    return;
+  }
+  const validationError = validateWeeklySchedule(parsed.data.days);
+  if (validationError) {
+    res.status(400).json({ error: validationError });
+    return;
+  }
+
+  const existing = await db
+    .select({ id: employeesTable.id })
+    .from(employeesTable)
+    .where(inArray(employeesTable.id, parsed.data.employeeIds));
+  if (existing.length !== parsed.data.employeeIds.length) {
+    res.status(404).json({ error: "Uno o más empleados seleccionados no existen." });
+    return;
+  }
+
+  await replaceWeeklySchedules(parsed.data.employeeIds, parsed.data.days);
+  res.json({
+    updatedEmployeeIds: parsed.data.employeeIds,
+    updatedCount: parsed.data.employeeIds.length,
+  });
 });
 
 export default router;

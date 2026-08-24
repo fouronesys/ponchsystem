@@ -154,26 +154,45 @@ export function validateWeeklySchedule(days: WeeklyScheduleDayInput[]): string |
 
 export async function replaceWeeklySchedule(employeeId: string, days: WeeklyScheduleDayInput[]) {
   db.transaction((tx) => {
-    tx
-      .insert(weeklySchedulesTable)
-      .values(Array.from({ length: DAYS_IN_WEEK }, (_, dayOfWeek) => emptyDay(employeeId, dayOfWeek)))
-      .onConflictDoNothing()
-      .run();
-    for (const day of days) {
-      tx
-        .update(weeklySchedulesTable)
-        .set({
-          startTime: day.startTime,
-          endTime: day.endTime,
-          mealStart: day.mealStart,
-          mealEnd: day.mealEnd,
-        })
-        .where(and(
-          eq(weeklySchedulesTable.employeeId, employeeId),
-          eq(weeklySchedulesTable.dayOfWeek, day.dayOfWeek),
-        ))
-        .run();
-    }
+    replaceWeeklyScheduleInTransaction(tx, employeeId, days);
   });
   return getWeeklySchedule(employeeId);
+}
+
+function replaceWeeklyScheduleInTransaction(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  employeeId: string,
+  days: WeeklyScheduleDayInput[],
+) {
+  tx
+    .insert(weeklySchedulesTable)
+    .values(Array.from({ length: DAYS_IN_WEEK }, (_, dayOfWeek) => emptyDay(employeeId, dayOfWeek)))
+    .onConflictDoNothing()
+    .run();
+  for (const day of days) {
+    tx
+      .update(weeklySchedulesTable)
+      .set({
+        startTime: day.startTime,
+        endTime: day.endTime,
+        mealStart: day.mealStart,
+        mealEnd: day.mealEnd,
+      })
+      .where(and(
+        eq(weeklySchedulesTable.employeeId, employeeId),
+        eq(weeklySchedulesTable.dayOfWeek, day.dayOfWeek),
+      ))
+      .run();
+  }
+}
+
+export async function replaceWeeklySchedules(
+  employeeIds: string[],
+  days: WeeklyScheduleDayInput[],
+): Promise<void> {
+  db.transaction((tx) => {
+    for (const employeeId of employeeIds) {
+      replaceWeeklyScheduleInTransaction(tx, employeeId, days);
+    }
+  });
 }

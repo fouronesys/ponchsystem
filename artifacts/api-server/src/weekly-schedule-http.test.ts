@@ -78,7 +78,15 @@ test("los horarios semanales respetan permisos y validaciones", async () => {
     role: "employee" as const,
     active: true,
   };
-  await db.insert(employeesTable).values([admin, employee]);
+  const secondEmployee = {
+    id: randomUUID(),
+    username: "schedule-employee-two",
+    passwordHash: localAuth.hashPassword(password),
+    displayName: "Segundo empleado de horario",
+    role: "employee" as const,
+    active: true,
+  };
+  await db.insert(employeesTable).values([admin, employee, secondEmployee]);
   const persistedDays = await db
     .select()
     .from(weeklySchedulesTable)
@@ -106,6 +114,12 @@ test("los horarios semanales respetan permisos y validaciones", async () => {
       headers: { cookie: employeeCookie },
     });
     assert.equal(forbidden.response.status, 403);
+    const bulkForbidden = await request(baseUrl, "/api/admin/employees/schedules/bulk", {
+      method: "PUT",
+      headers: { cookie: employeeCookie },
+      body: JSON.stringify({ employeeIds: [employee.id], days: blankWeek() }),
+    });
+    assert.equal(bulkForbidden.response.status, 403);
 
     const incompleteMeal = blankWeek();
     incompleteMeal[1] = {
@@ -185,6 +199,37 @@ test("los horarios semanales respetan permisos y validaciones", async () => {
     });
     assert.equal(updated.response.status, 200);
     assert.deepEqual(updated.body.days.find((day: { dayOfWeek: number }) => day.dayOfWeek === 1), validWeek[1]);
+
+    const duplicateBulkSelection = await request(baseUrl, "/api/admin/employees/schedules/bulk", {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({ employeeIds: [secondEmployee.id, secondEmployee.id], days: validWeek }),
+    });
+    assert.equal(duplicateBulkSelection.response.status, 400);
+
+    const bulkWithUnknownEmployee = await request(baseUrl, "/api/admin/employees/schedules/bulk", {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({ employeeIds: [secondEmployee.id, randomUUID()], days: validWeek }),
+    });
+    assert.equal(bulkWithUnknownEmployee.response.status, 404);
+    const untouchedSecondSchedule = await request(baseUrl, `/api/admin/employees/${secondEmployee.id}/schedule`, {
+      headers: { cookie: adminCookie },
+    });
+    assert.equal(untouchedSecondSchedule.body.days.find((day: { dayOfWeek: number }) => day.dayOfWeek === 1)?.startTime, null);
+
+    const bulkUpdated = await request(baseUrl, "/api/admin/employees/schedules/bulk", {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({ employeeIds: [employee.id, secondEmployee.id], days: validWeek }),
+    });
+    assert.equal(bulkUpdated.response.status, 200);
+    assert.equal(bulkUpdated.body.updatedCount, 2);
+    assert.deepEqual(bulkUpdated.body.updatedEmployeeIds, [employee.id, secondEmployee.id]);
+    const updatedSecondSchedule = await request(baseUrl, `/api/admin/employees/${secondEmployee.id}/schedule`, {
+      headers: { cookie: adminCookie },
+    });
+    assert.deepEqual(updatedSecondSchedule.body.days.find((day: { dayOfWeek: number }) => day.dayOfWeek === 1), validWeek[1]);
 
     const ownSchedule = await request(baseUrl, "/api/attendance/schedule", {
       headers: { cookie: employeeCookie },

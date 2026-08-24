@@ -5,6 +5,7 @@ import {
   useListAttendanceEvents,
   exportAttendancePdf,
   exportAttendanceXml,
+  applyWeeklyScheduleToEmployees,
   getGetAttendanceSummaryQueryKey,
   getListAttendanceEventsQueryKey
 } from "@workspace/api-client-react";
@@ -445,6 +446,10 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [targetEmployeeIds, setTargetEmployeeIds] = useState<string[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkConfirmationOpen, setBulkConfirmationOpen] = useState(false);
+  const [bulkResult, setBulkResult] = useState("");
 
   useEffect(() => {
     if (!employeeId && employees[0]) {
@@ -478,6 +483,13 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
     };
   }, [employeeId]);
 
+  useEffect(() => {
+    setTargetEmployeeIds((current) => current.filter((id) => (
+      id !== employeeId && employees.some((employee) => employee.id === id && employee.active)
+    )));
+    setBulkConfirmationOpen(false);
+  }, [employeeId, employees]);
+
   const updateDay = (dayOfWeek: number, changes: Partial<WeeklyScheduleDay>) => {
     setSchedule((current) => current ? {
       ...current,
@@ -503,6 +515,39 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
   };
 
   const selectedEmployee = employees.find((employee) => employee.id === employeeId);
+  const targetableEmployees = employees.filter((employee) => employee.id !== employeeId && employee.active);
+  const allTargetsSelected = targetableEmployees.length > 0 && targetEmployeeIds.length === targetableEmployees.length;
+  const toggleTarget = (targetId: string) => {
+    setTargetEmployeeIds((current) => current.includes(targetId)
+      ? current.filter((id) => id !== targetId)
+      : [...current, targetId]);
+    setBulkConfirmationOpen(false);
+    setBulkResult("");
+  };
+  const toggleAllTargets = () => {
+    setTargetEmployeeIds(allTargetsSelected ? [] : targetableEmployees.map((employee) => employee.id));
+    setBulkConfirmationOpen(false);
+    setBulkResult("");
+  };
+  const applyToSelectedEmployees = async () => {
+    if (!schedule || targetEmployeeIds.length === 0) return;
+    setBulkSaving(true);
+    setError("");
+    setBulkResult("");
+    try {
+      const result = await applyWeeklyScheduleToEmployees({
+        employeeIds: [employeeId, ...targetEmployeeIds],
+        days: schedule.days,
+      });
+      setBulkResult(`Horario guardado en la plantilla y aplicado a ${targetEmployeeIds.length} ${targetEmployeeIds.length === 1 ? "empleado" : "empleados"}.`);
+      setBulkConfirmationOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos aplicar el horario a la selección.");
+      setBulkConfirmationOpen(false);
+    } finally {
+      setBulkSaving(false);
+    }
+  };
   const daysByNumber = new Map(schedule?.days.map((day) => [day.dayOfWeek, day]));
 
   return (
@@ -548,6 +593,46 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
             )}
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button onClick={() => void save()} disabled={!schedule || loading || saving}>{saving ? "Guardando…" : "Guardar horario semanal"}</Button>
+            {schedule && selectedEmployee && (
+              <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.02] p-4">
+                <div>
+                  <h3 className="flex items-center gap-2 font-semibold"><Copy className="h-4 w-4 text-primary" />Aplicar este horario a varios empleados</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Usa el horario de <span className="font-medium text-foreground">{selectedEmployee.displayName}</span> como plantilla. Sólo se muestran cuentas activas.</p>
+                </div>
+                {targetableEmployees.length === 0 ? <p className="text-sm text-muted-foreground">No hay otros empleados activos para seleccionar.</p> : (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{targetEmployeeIds.length} de {targetableEmployees.length} seleccionados</p>
+                      <Button size="sm" variant="outline" onClick={toggleAllTargets}>{allTargetsSelected ? "Limpiar selección" : "Seleccionar todos"}</Button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {targetableEmployees.map((employee) => {
+                        const checked = targetEmployeeIds.includes(employee.id);
+                        return <label key={employee.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm transition-colors ${checked ? "border-primary bg-primary/5" : "hover:bg-secondary/40"}`}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleTarget(employee.id)} aria-label={`Seleccionar a ${employee.displayName}`} />
+                          <span className="min-w-0"><span className="block truncate font-medium">{employee.displayName}</span><span className="block truncate text-xs text-muted-foreground">@{employee.username}</span></span>
+                        </label>;
+                      })}
+                    </div>
+                    {bulkConfirmationOpen ? (
+                      <div className="rounded-lg border border-warning/40 bg-warning/10 p-3">
+                        <p className="text-sm font-medium">Vas a guardar el horario de la plantilla y reemplazar el de {targetEmployeeIds.length} {targetEmployeeIds.length === 1 ? "empleado" : "empleados"}.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Esta acción no cambia el historial de asistencia; sólo actualiza sus horarios futuros.</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button size="sm" onClick={() => void applyToSelectedEmployees()} disabled={bulkSaving}>{bulkSaving ? "Aplicando…" : "Confirmar y aplicar"}</Button>
+                          <Button size="sm" variant="outline" onClick={() => setBulkConfirmationOpen(false)} disabled={bulkSaving}>Cancelar</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="secondary" onClick={() => setBulkConfirmationOpen(true)} disabled={targetEmployeeIds.length === 0 || bulkSaving}>
+                        <Copy className="mr-2 h-4 w-4" />Aplicar a {targetEmployeeIds.length || "varios"} empleados
+                      </Button>
+                    )}
+                  </>
+                )}
+                {bulkResult && <p className="text-sm text-success" role="status">{bulkResult}</p>}
+              </div>
+            )}
           </>
         )}
       </CardContent>
