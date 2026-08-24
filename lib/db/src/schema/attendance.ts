@@ -32,6 +32,28 @@ export const employeesTable = sqliteTable(
   ],
 );
 
+export const weeklySchedulesTable = sqliteTable(
+  "weekly_schedules",
+  {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id")
+      .notNull()
+      .references(() => employeesTable.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(),
+    startTime: text("start_time"),
+    endTime: text("end_time"),
+    mealStart: text("meal_start"),
+    mealEnd: text("meal_end"),
+  },
+  (table) => [
+    uniqueIndex("weekly_schedules_employee_day_unique").on(
+      table.employeeId,
+      table.dayOfWeek,
+    ),
+    index("weekly_schedules_employee_idx").on(table.employeeId),
+  ],
+);
+
 export const authSessionsTable = sqliteTable(
   "auth_sessions",
   {
@@ -142,6 +164,7 @@ export const attendanceEventsTable = sqliteTable(
 export const insertEmployeeSchema = createInsertSchema(employeesTable).omit({
   createdAt: true,
 });
+export const insertWeeklyScheduleSchema = createInsertSchema(weeklySchedulesTable);
 export const insertAttendanceTokenSchema =
   createInsertSchema(attendanceTokensTable).omit({ createdAt: true });
 export const insertAttendanceEventSchema = createInsertSchema(
@@ -149,10 +172,12 @@ export const insertAttendanceEventSchema = createInsertSchema(
 ).omit({ occurredAt: true });
 
 export type Employee = typeof employeesTable.$inferSelect;
+export type WeeklySchedule = typeof weeklySchedulesTable.$inferSelect;
 export type AuthSession = typeof authSessionsTable.$inferSelect;
 export type AttendanceToken = typeof attendanceTokensTable.$inferSelect;
 export type QrDisplayLink = typeof qrDisplayLinksTable.$inferSelect;
 export type AttendanceEvent = typeof attendanceEventsTable.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type InsertWeeklySchedule = z.infer<typeof insertWeeklyScheduleSchema>;
 export type InsertAttendanceToken = z.infer<typeof insertAttendanceTokenSchema>;
 export type InsertAttendanceEvent = z.infer<typeof insertAttendanceEventSchema>;

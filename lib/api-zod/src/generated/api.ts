@@ -316,3 +316,114 @@ export const UpdateEmployeeResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the current employee weekly schedule
+ */
+export const getMyWeeklyScheduleResponseDaysItemDayOfWeekMin = 0;
+export const getMyWeeklyScheduleResponseDaysItemDayOfWeekMax = 6;
+
+export const getMyWeeklyScheduleResponseDaysItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getMyWeeklyScheduleResponseDaysItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getMyWeeklyScheduleResponseDaysItemMealStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getMyWeeklyScheduleResponseDaysItemMealEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getMyWeeklyScheduleResponseDaysMin = 7;
+export const getMyWeeklyScheduleResponseDaysMax = 7;
+
+
+
+export const GetMyWeeklyScheduleResponse = zod.object({
+  "employeeId": zod.string(),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(getMyWeeklyScheduleResponseDaysItemDayOfWeekMin).max(getMyWeeklyScheduleResponseDaysItemDayOfWeekMax),
+  "startTime": zod.string().regex(getMyWeeklyScheduleResponseDaysItemStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(getMyWeeklyScheduleResponseDaysItemEndTimeRegExp).nullable(),
+  "mealStart": zod.string().regex(getMyWeeklyScheduleResponseDaysItemMealStartRegExp).nullable(),
+  "mealEnd": zod.string().regex(getMyWeeklyScheduleResponseDaysItemMealEndRegExp).nullable()
+})).min(getMyWeeklyScheduleResponseDaysMin).max(getMyWeeklyScheduleResponseDaysMax)
+})
+
+
+/**
+ * @summary Get an employee weekly schedule
+ */
+export const GetEmployeeWeeklyScheduleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMin = 0;
+export const getEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMax = 6;
+
+export const getEmployeeWeeklyScheduleResponseDaysItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getEmployeeWeeklyScheduleResponseDaysItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getEmployeeWeeklyScheduleResponseDaysItemMealStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getEmployeeWeeklyScheduleResponseDaysItemMealEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getEmployeeWeeklyScheduleResponseDaysMin = 7;
+export const getEmployeeWeeklyScheduleResponseDaysMax = 7;
+
+
+
+export const GetEmployeeWeeklyScheduleResponse = zod.object({
+  "employeeId": zod.string(),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(getEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMin).max(getEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMax),
+  "startTime": zod.string().regex(getEmployeeWeeklyScheduleResponseDaysItemStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(getEmployeeWeeklyScheduleResponseDaysItemEndTimeRegExp).nullable(),
+  "mealStart": zod.string().regex(getEmployeeWeeklyScheduleResponseDaysItemMealStartRegExp).nullable(),
+  "mealEnd": zod.string().regex(getEmployeeWeeklyScheduleResponseDaysItemMealEndRegExp).nullable()
+})).min(getEmployeeWeeklyScheduleResponseDaysMin).max(getEmployeeWeeklyScheduleResponseDaysMax)
+})
+
+
+/**
+ * @summary Replace an employee weekly schedule
+ */
+export const UpdateEmployeeWeeklyScheduleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateEmployeeWeeklyScheduleBodyDaysItemDayOfWeekMin = 0;
+export const updateEmployeeWeeklyScheduleBodyDaysItemDayOfWeekMax = 6;
+
+export const updateEmployeeWeeklyScheduleBodyDaysItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleBodyDaysItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleBodyDaysItemMealStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleBodyDaysItemMealEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleBodyDaysMin = 7;
+export const updateEmployeeWeeklyScheduleBodyDaysMax = 7;
+
+
+
+export const UpdateEmployeeWeeklyScheduleBody = zod.object({
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(updateEmployeeWeeklyScheduleBodyDaysItemDayOfWeekMin).max(updateEmployeeWeeklyScheduleBodyDaysItemDayOfWeekMax),
+  "startTime": zod.string().regex(updateEmployeeWeeklyScheduleBodyDaysItemStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(updateEmployeeWeeklyScheduleBodyDaysItemEndTimeRegExp).nullable(),
+  "mealStart": zod.string().regex(updateEmployeeWeeklyScheduleBodyDaysItemMealStartRegExp).nullable(),
+  "mealEnd": zod.string().regex(updateEmployeeWeeklyScheduleBodyDaysItemMealEndRegExp).nullable()
+})).min(updateEmployeeWeeklyScheduleBodyDaysMin).max(updateEmployeeWeeklyScheduleBodyDaysMax)
+})
+
+export const updateEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMin = 0;
+export const updateEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMax = 6;
+
+export const updateEmployeeWeeklyScheduleResponseDaysItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleResponseDaysItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleResponseDaysItemMealStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleResponseDaysItemMealEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmployeeWeeklyScheduleResponseDaysMin = 7;
+export const updateEmployeeWeeklyScheduleResponseDaysMax = 7;
+
+
+
+export const UpdateEmployeeWeeklyScheduleResponse = zod.object({
+  "employeeId": zod.string(),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(updateEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMin).max(updateEmployeeWeeklyScheduleResponseDaysItemDayOfWeekMax),
+  "startTime": zod.string().regex(updateEmployeeWeeklyScheduleResponseDaysItemStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(updateEmployeeWeeklyScheduleResponseDaysItemEndTimeRegExp).nullable(),
+  "mealStart": zod.string().regex(updateEmployeeWeeklyScheduleResponseDaysItemMealStartRegExp).nullable(),
+  "mealEnd": zod.string().regex(updateEmployeeWeeklyScheduleResponseDaysItemMealEndRegExp).nullable()
+})).min(updateEmployeeWeeklyScheduleResponseDaysMin).max(updateEmployeeWeeklyScheduleResponseDaysMax)
+})
+
+

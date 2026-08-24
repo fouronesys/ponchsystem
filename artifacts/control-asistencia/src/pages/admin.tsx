@@ -17,6 +17,7 @@ import { formatTime, formatDateTime } from "@/lib/utils";
 import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone } from "lucide-react";
 import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
 import { apiFetch, imageToDataUrl } from "@/lib/api";
+import type { WeeklySchedule, WeeklyScheduleDay } from "@workspace/api-client-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -344,7 +345,134 @@ function EmployeeManager() {
           )}
         </CardContent>
       </Card>
+      <ScheduleManager employees={employees} />
     </section>
+  );
+}
+
+const WEEK_DAYS: Array<{ dayOfWeek: number; label: string }> = [
+  { dayOfWeek: 1, label: "Lunes" },
+  { dayOfWeek: 2, label: "Martes" },
+  { dayOfWeek: 3, label: "Miércoles" },
+  { dayOfWeek: 4, label: "Jueves" },
+  { dayOfWeek: 5, label: "Viernes" },
+  { dayOfWeek: 6, label: "Sábado" },
+  { dayOfWeek: 0, label: "Domingo" },
+];
+
+function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
+  const [employeeId, setEmployeeId] = useState("");
+  const [schedule, setSchedule] = useState<WeeklySchedule | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!employeeId && employees[0]) {
+      setEmployeeId(employees[0].id);
+    }
+    if (employeeId && !employees.some((employee) => employee.id === employeeId)) {
+      setEmployeeId(employees[0]?.id ?? "");
+    }
+  }, [employeeId, employees]);
+
+  useEffect(() => {
+    if (!employeeId) {
+      setSchedule(null);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setError("");
+    void apiFetch<WeeklySchedule>(`/admin/employees/${employeeId}/schedule`)
+      .then((nextSchedule) => {
+        if (active) setSchedule(nextSchedule);
+      })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : "No pudimos cargar el horario.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [employeeId]);
+
+  const updateDay = (dayOfWeek: number, changes: Partial<WeeklyScheduleDay>) => {
+    setSchedule((current) => current ? {
+      ...current,
+      days: current.days.map((day) => day.dayOfWeek === dayOfWeek ? { ...day, ...changes } : day),
+    } : current);
+  };
+
+  const save = async () => {
+    if (!schedule || !employeeId) return;
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await apiFetch<WeeklySchedule>(`/admin/employees/${employeeId}/schedule`, {
+        method: "PUT",
+        body: JSON.stringify({ days: schedule.days }),
+      });
+      setSchedule(updated);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos guardar el horario.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectedEmployee = employees.find((employee) => employee.id === employeeId);
+  const daysByNumber = new Map(schedule?.days.map((day) => [day.dayOfWeek, day]));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" />Horario semanal</CardTitle>
+        <CardDescription>Configura la jornada y el intervalo de comida de cada empleado. Deja un día libre sin horas.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {employees.length === 0 ? <p className="text-sm text-muted-foreground">Crea un empleado para asignarle un horario.</p> : (
+          <>
+            <label className="block max-w-md text-sm font-medium">
+              Empleado
+              <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.displayName} (@{employee.username})</option>)}
+              </select>
+            </label>
+            {selectedEmployee && <p className="text-sm text-muted-foreground">Horario de <span className="font-medium text-foreground">{selectedEmployee.displayName}</span>.</p>}
+            {loading || !schedule ? <div className="space-y-3"><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /></div> : (
+              <div className="space-y-3">
+                {WEEK_DAYS.map(({ dayOfWeek, label }) => {
+                  const day = daysByNumber.get(dayOfWeek)!;
+                  const isWorking = Boolean(day.startTime && day.endTime);
+                  const hasMeal = Boolean(day.mealStart && day.mealEnd);
+                  return (
+                    <div key={dayOfWeek} className="rounded-xl border p-4">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                        <p className="font-semibold">{label}</p>
+                        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={isWorking} onChange={(event) => updateDay(dayOfWeek, event.target.checked ? { startTime: day.startTime ?? "08:00", endTime: day.endTime ?? "17:00" } : { startTime: null, endTime: null, mealStart: null, mealEnd: null })} />Laborable</label>
+                      </div>
+                      {isWorking ? (
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                          <label className="text-sm">Entrada<Input type="time" value={day.startTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { startTime: event.target.value || null })} /></label>
+                          <label className="text-sm">Salida<Input type="time" value={day.endTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { endTime: event.target.value || null })} /></label>
+                          <label className="flex items-end gap-2 pb-2 text-sm font-medium"><input type="checkbox" checked={hasMeal} onChange={(event) => updateDay(dayOfWeek, event.target.checked ? { mealStart: "12:00", mealEnd: "13:00" } : { mealStart: null, mealEnd: null })} />Tiene comida</label>
+                          {hasMeal && <><label className="text-sm">Inicio comida<Input type="time" value={day.mealStart ?? ""} onChange={(event) => updateDay(dayOfWeek, { mealStart: event.target.value || null })} /></label><label className="text-sm">Fin comida<Input type="time" value={day.mealEnd ?? ""} onChange={(event) => updateDay(dayOfWeek, { mealEnd: event.target.value || null })} /></label></>}
+                        </div>
+                      ) : <p className="text-sm text-muted-foreground">Día libre.</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button onClick={() => void save()} disabled={!schedule || loading || saving}>{saving ? "Guardando…" : "Guardar horario semanal"}</Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

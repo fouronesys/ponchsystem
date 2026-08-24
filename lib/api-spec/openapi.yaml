@@ -272,6 +272,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Employee"
+  /attendance/schedule:
+    get:
+      operationId: getMyWeeklySchedule
+      tags: [attendance]
+      summary: Get the current employee weekly schedule
+      responses:
+        "200":
+          description: Current employee weekly schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySchedule"
+  /admin/employees/{id}/schedule:
+    get:
+      operationId: getEmployeeWeeklySchedule
+      tags: [admin]
+      summary: Get an employee weekly schedule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Employee weekly schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySchedule"
+        "404":
+          description: Employee not found
+    put:
+      operationId: updateEmployeeWeeklySchedule
+      tags: [admin]
+      summary: Replace an employee weekly schedule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklyScheduleInput"
+      responses:
+        "200":
+          description: Updated employee weekly schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySchedule"
+        "400":
+          description: Invalid schedule
+        "404":
+          description: Employee not found
 components:
   headers:
     NoCache:
@@ -446,4 +503,34 @@ components:
         password: { type: string, minLength: 8, maxLength: 256 }
         profilePhoto: { type: string, maxLength: 3000000 }
         active: { type: boolean }
+    WeeklyScheduleDay:
+      type: object
+      properties:
+        dayOfWeek: { type: number, minimum: 0, maximum: 6 }
+        startTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        endTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        mealStart: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        mealEnd: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+      required: [dayOfWeek, startTime, endTime, mealStart, mealEnd]
+    WeeklySchedule:
+      type: object
+      properties:
+        employeeId: { type: string }
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/WeeklyScheduleDay"
+      required: [employeeId, days]
+    WeeklyScheduleInput:
+      type: object
+      properties:
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/WeeklyScheduleDay"
+      required: [days]
 

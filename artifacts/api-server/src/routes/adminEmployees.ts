@@ -5,6 +5,7 @@ import { Router, type IRouter } from "express";
 import { saveImage } from "../lib/imageStorage";
 import { hashPassword, isValidPassword, MIN_PASSWORD_LENGTH, normalizeUsername } from "../lib/localAuth";
 import { requireAdministrator } from "../middlewares/attendanceAuth";
+import { ensureWeeklySchedule } from "../lib/weeklySchedule";
 
 const router: IRouter = Router();
 
@@ -63,6 +64,7 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
         active: true,
       })
       .returning();
+    await ensureWeeklySchedule(created.id);
     res.status(201).json(toEmployeeResponse(created));
   } catch (error) {
     if (String(error).includes("UNIQUE")) {

@@ -1,4 +1,4 @@
-import { useGetTodayAttendance } from "@workspace/api-client-react";
+import { useGetMyWeeklySchedule, useGetTodayAttendance } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { QrCode, LogIn, LogOut, CheckCircle2, Clock, AlertCircle } from "lucide-
 
 export default function EmployeePage() {
   const { data: attendance, isLoading, isError, refetch } = useGetTodayAttendance();
+  const { data: weeklySchedule } = useGetMyWeeklySchedule();
 
   if (isLoading) {
     return <div className="mx-auto max-w-md"><Card><CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader><CardContent><Skeleton className="h-32 w-full" /></CardContent></Card></div>;
@@ -19,6 +20,7 @@ export default function EmployeePage() {
   const isCheckedIn = attendance.state === "checked_in";
   const isCheckedOut = attendance.state === "checked_out";
   const worked = `${Math.floor(attendance.workedMinutes / 60)}h ${attendance.workedMinutes % 60}m`;
+  const todaySchedule = weeklySchedule?.days.find((day) => day.dayOfWeek === new Date().getDay());
 
   return (
     <div className="mx-auto max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -35,6 +37,18 @@ export default function EmployeePage() {
             <TimeBox icon={<LogOut className="h-3.5 w-3.5" />} label="Salida" value={formatTime(attendance.checkOut)} />
           </div>
           {(isCheckedIn || isCheckedOut) && <div className="flex items-center gap-3 rounded-lg border bg-card p-3"><Clock className="h-5 w-5 text-primary" /><div><p className="text-xs font-medium uppercase text-muted-foreground">Tiempo registrado</p><p className="font-semibold">{worked}</p></div></div>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Clock className="h-5 w-5 text-primary" />Mi horario de hoy</CardTitle><CardDescription>Configurado por administración.</CardDescription></CardHeader>
+        <CardContent>
+          {!weeklySchedule ? <Skeleton className="h-16 w-full" /> : !todaySchedule?.startTime || !todaySchedule.endTime ? <p className="text-sm text-muted-foreground">Hoy es día libre.</p> : (
+            <div className="space-y-2 text-sm">
+              <p><span className="font-medium">Jornada:</span> {todaySchedule.startTime} – {todaySchedule.endTime}</p>
+              <p><span className="font-medium">Comida:</span> {todaySchedule.mealStart && todaySchedule.mealEnd ? `${todaySchedule.mealStart} – ${todaySchedule.mealEnd}` : "Sin intervalo configurado"}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
