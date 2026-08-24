@@ -327,39 +327,84 @@ function pdfText(value: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\x20-\x7E]/g, " ")
+    .slice(0, 104)
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)")
-    .slice(0, 104);
+    .replace(/\)/g, "\\)");
 }
 
-function makePdf(lines: string[]): Buffer {
-  const pages: string[][] = [];
-  for (let index = 0; index < lines.length; index += 47) {
-    pages.push(lines.slice(index, index + 47));
-  }
-  if (pages.length === 0) pages.push(["Sin datos para el período seleccionado."]);
+type PdfColor = [number, number, number];
+const NAVY: PdfColor = [0.06, 0.16, 0.26];
+const BLUE: PdfColor = [0.09, 0.49, 0.86];
+const PALE_BLUE: PdfColor = [0.91, 0.96, 1];
+const SLATE: PdfColor = [0.29, 0.36, 0.44];
+const MUTED: PdfColor = [0.42, 0.48, 0.55];
+const GREEN: PdfColor = [0.06, 0.55, 0.38];
+const AMBER: PdfColor = [0.86, 0.48, 0.03];
+const RED: PdfColor = [0.78, 0.16, 0.16];
 
+function color(value: PdfColor): string {
+  return `${value[0]} ${value[1]} ${value[2]}`;
+}
+
+function pdfRect(x: number, y: number, width: number, height: number, fill: PdfColor): string {
+  return `${color(fill)} rg ${x} ${y} ${width} ${height} re f\n`;
+}
+
+function pdfLine(x: number, y: number, width: number, stroke: PdfColor): string {
+  return `${color(stroke)} RG 0.6 w ${x} ${y} m ${x + width} ${y} l S\n`;
+}
+
+function pdfLabel(
+  x: number,
+  y: number,
+  value: string,
+  size: number,
+  font: "F1" | "F2" = "F1",
+  fill: PdfColor = SLATE,
+): string {
+  return `${color(fill)} rg BT /${font} ${size} Tf ${x} ${y} Td (${pdfText(value)}) Tj ET\n`;
+}
+
+function pageHeader(pageNumber: number, pageCount: number): string {
+  return [
+    pdfRect(0, 742, 612, 50, NAVY),
+    pdfRect(40, 754, 28, 28, BLUE),
+    pdfLabel(47, 764, "FC", 10, "F2", [1, 1, 1]),
+    pdfLabel(82, 768, "FarCheck RD", 14, "F2", [1, 1, 1]),
+    pdfLabel(82, 754, "Control de asistencia", 8, "F1", [0.78, 0.87, 0.95]),
+    pdfLabel(500, 763, `${pageNumber} / ${pageCount}`, 8, "F1", [0.78, 0.87, 0.95]),
+  ].join("");
+}
+
+function statusColor(state: PayrollReportDay["state"]): PdfColor {
+  return state === "worked" ? GREEN : state === "absent" ? RED : state === "incomplete" ? AMBER : MUTED;
+}
+
+function makePdf(pages: string[]): Buffer {
+  if (pages.length === 0) pages.push(pageHeader(1, 1));
   const objects: string[] = [];
   const pageIds: number[] = [];
   const contentIds: number[] = [];
   let nextId = 4;
-  for (const page of pages) {
+  for (const _page of pages) {
     pageIds.push(nextId++);
     contentIds.push(nextId++);
   }
   objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
   objects[2] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
-  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>";
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
 
   pages.forEach((page, index) => {
     const content = `BT\n/F1 8 Tf\n46 755 Td\n${page.map((line, lineIndex) => (
       `${lineIndex ? "0 -15 Td\n" : ""}(${pdfText(line)}) Tj`
     )).join("\n")}\nET`;
+    const designedContent = page;
     const pageId = pageIds[index]!;
     const contentId = contentIds[index]!;
-    objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`;
-    objects[contentId] = `<< /Length ${Buffer.byteLength(content, "ascii")} >>\nstream\n${content}\nendstream`;
+    objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects[contentId] = `<< /Length ${Buffer.byteLength(designedContent, "ascii")} >>\nstream\n${designedContent}\nendstream`;
   });
 
   let output = "%PDF-1.4\n";
@@ -378,32 +423,93 @@ function makePdf(lines: string[]): Buffer {
 }
 
 export function payrollReportPdf(report: PayrollAttendanceReport): Buffer {
-  const lines = [
-    "FarCheck RD - Reporte de asistencia para nomina",
-    `Periodo: ${report.startDate} al ${report.endDate}`,
-    `Generado: ${report.generatedAt.toLocaleString("es-DO", { timeZone: TIME_ZONE })}`,
-    "",
-    "RESUMEN GENERAL",
-    `Empleados: ${report.totals.employeeCount} | Jornadas esperadas: ${report.totals.expectedDays} | Ausencias: ${report.totals.absenceDays}`,
-    `Horas registradas: ${duration(report.totals.workedMinutes)} | Jornadas incompletas: ${report.totals.incompleteDays}`,
-    `Entradas tardias: ${report.totals.lateEntries} | Eventos fuera de jornada: ${report.totals.outsideShiftEvents}`,
-    "",
-  ];
-  for (const employee of report.employees) {
-    lines.push(
-      `EMPLEADO: ${employee.displayName}${employee.documentNumber ? ` | Documento: ${employee.documentNumber}` : ""}`,
-      `${employee.jobTitle ? `Cargo: ${employee.jobTitle} | ` : ""}Esperadas: ${employee.expectedDays} | Ausencias: ${employee.absenceDays} | Horas: ${duration(employee.workedMinutes)} | Incompletas: ${employee.incompleteDays}`,
-      "Fecha       Programado   Entrada  Salida   Horas    Estado       Excepciones",
-    );
-    for (const day of employee.days) {
-      const timing = [timingLabel(day.checkInTiming), timingLabel(day.checkOutTiming)]
-        .filter(Boolean)
-        .join(" / ");
-      lines.push(
-        `${day.date}  ${day.scheduledStart && day.scheduledEnd ? `${day.scheduledStart}-${day.scheduledEnd}` : "Libre      "}  ${timeAtBogota(day.checkIn).padEnd(7)}  ${timeAtBogota(day.checkOut).padEnd(7)}  ${duration(day.workedMinutes).padEnd(7)}  ${dayStateLabel(day.state).padEnd(11)} ${timing || "—"}`,
-      );
+  const employeePages = report.employees.flatMap((employee) => {
+    const chunks: PayrollReportDay[][] = [];
+    for (let index = 0; index < employee.days.length; index += 25) {
+      chunks.push(employee.days.slice(index, index + 25));
     }
-    lines.push("");
+    return chunks.length ? chunks.map((days) => ({ employee, days })) : [{ employee, days: [] }];
+  });
+  const pageCount = Math.max(1, employeePages.length + 1);
+  const pages: string[] = [];
+
+  let summary = pageHeader(1, pageCount);
+  summary += pdfLabel(46, 710, "Reporte de asistencia", 22, "F2", NAVY);
+  summary += pdfLabel(46, 688, "Resumen claro para revisión y preparación de nómina", 10, "F1", MUTED);
+  summary += pdfLabel(46, 665, `Período: ${report.startDate} al ${report.endDate}`, 10, "F2", SLATE);
+  summary += pdfLabel(430, 665, `Generado: ${report.generatedAt.toLocaleDateString("es-DO", { timeZone: TIME_ZONE })}`, 8, "F1", MUTED);
+
+  const cards = [
+    ["Empleados", String(report.totals.employeeCount), BLUE],
+    ["Jornadas esperadas", String(report.totals.expectedDays), NAVY],
+    ["Ausencias", String(report.totals.absenceDays), RED],
+    ["Horas registradas", duration(report.totals.workedMinutes), GREEN],
+  ] as const;
+  cards.forEach(([label, value, fill], index) => {
+    const x = 46 + index * 130;
+    summary += pdfRect(x, 590, 118, 54, PALE_BLUE);
+    summary += pdfRect(x, 590, 5, 54, fill);
+    summary += pdfLabel(x + 14, 625, label, 8, "F1", MUTED);
+    summary += pdfLabel(x + 14, 603, value, 16, "F2", fill);
+  });
+  summary += pdfLabel(46, 555, "Indicadores de atención", 12, "F2", NAVY);
+  summary += pdfLine(46, 546, 520, PALE_BLUE);
+  summary += pdfLabel(52, 522, `Entradas tardías: ${report.totals.lateEntries}`, 10, "F2", AMBER);
+  summary += pdfLabel(220, 522, `Eventos fuera de jornada: ${report.totals.outsideShiftEvents}`, 10, "F2", RED);
+  summary += pdfLabel(450, 522, `Incompletas: ${report.totals.incompleteDays}`, 10, "F2", SLATE);
+  summary += pdfLabel(46, 480, "Resumen por empleado", 12, "F2", NAVY);
+  summary += pdfRect(46, 450, 520, 22, NAVY);
+  summary += pdfLabel(56, 457, "Empleado", 8, "F2", [1, 1, 1]);
+  summary += pdfLabel(286, 457, "Esperadas", 8, "F2", [1, 1, 1]);
+  summary += pdfLabel(358, 457, "Ausencias", 8, "F2", [1, 1, 1]);
+  summary += pdfLabel(430, 457, "Horas", 8, "F2", [1, 1, 1]);
+  summary += pdfLabel(500, 457, "Alertas", 8, "F2", [1, 1, 1]);
+  report.employees.slice(0, 16).forEach((employee, index) => {
+    const y = 430 - index * 22;
+    if (index % 2 === 0) summary += pdfRect(46, y - 6, 520, 22, [0.97, 0.98, 0.99]);
+    const alerts = employee.lateEntries + employee.outsideShiftEvents + employee.incompleteDays;
+    summary += pdfLabel(56, y, employee.displayName, 8, "F1", SLATE);
+    summary += pdfLabel(296, y, String(employee.expectedDays), 8, "F1", SLATE);
+    summary += pdfLabel(368, y, String(employee.absenceDays), 8, "F1", employee.absenceDays ? RED : SLATE);
+    summary += pdfLabel(430, y, duration(employee.workedMinutes), 8, "F1", SLATE);
+    summary += pdfLabel(510, y, String(alerts), 8, "F2", alerts ? AMBER : GREEN);
+  });
+  if (report.employees.length > 16) {
+    summary += pdfLabel(46, 72, `Consulta el detalle diario de los ${report.employees.length} empleados en las páginas siguientes.`, 8, "F1", MUTED);
   }
-  return makePdf(lines);
+  pages.push(summary);
+
+  employeePages.forEach(({ employee, days }, employeePageIndex) => {
+    const pageNumber = employeePageIndex + 2;
+    let page = pageHeader(pageNumber, pageCount);
+    page += pdfLabel(46, 710, employee.displayName, 18, "F2", NAVY);
+    page += pdfLabel(46, 690, `${employee.jobTitle ? `${employee.jobTitle} · ` : ""}${employee.documentNumber ? `Documento: ${employee.documentNumber}` : "Sin documento"}`, 9, "F1", MUTED);
+    page += pdfLabel(420, 700, `Horas: ${duration(employee.workedMinutes)}`, 9, "F2", GREEN);
+    page += pdfLabel(420, 685, `Ausencias: ${employee.absenceDays}`, 9, "F2", employee.absenceDays ? RED : SLATE);
+    page += pdfRect(46, 650, 520, 24, NAVY);
+    page += pdfLabel(54, 658, "Fecha", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(118, 658, "Jornada", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(218, 658, "Entrada", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(282, 658, "Salida", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(348, 658, "Horas", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(400, 658, "Estado", 8, "F2", [1, 1, 1]);
+    page += pdfLabel(476, 658, "Nota", 8, "F2", [1, 1, 1]);
+    days.forEach((day, dayIndex) => {
+      const y = 632 - dayIndex * 22;
+      if (dayIndex % 2 === 0) page += pdfRect(46, y - 6, 520, 22, [0.97, 0.98, 0.99]);
+      const schedule = day.scheduledStart && day.scheduledEnd ? `${day.scheduledStart}-${day.scheduledEnd}` : "Libre";
+      const timing = timingLabel(day.checkInTiming) ?? timingLabel(day.checkOutTiming) ?? "—";
+      page += pdfLabel(54, y, day.date, 8, "F1", SLATE);
+      page += pdfLabel(118, y, schedule, 8, "F1", SLATE);
+      page += pdfLabel(218, y, timeAtBogota(day.checkIn), 8, "F1", SLATE);
+      page += pdfLabel(282, y, timeAtBogota(day.checkOut), 8, "F1", SLATE);
+      page += pdfLabel(348, y, duration(day.workedMinutes), 8, "F1", SLATE);
+      page += pdfLabel(400, y, dayStateLabel(day.state), 8, "F2", statusColor(day.state));
+      page += pdfLabel(476, y, timing, 8, "F1", timing === "A tiempo" ? GREEN : timing === "—" ? MUTED : AMBER);
+    });
+    page += pdfLine(46, 65, 520, PALE_BLUE);
+    page += pdfLabel(46, 48, "FarCheck RD · Documento informativo para revisión de asistencia; no calcula salarios ni deducciones.", 7, "F1", MUTED);
+    pages.push(page);
+  });
+  return makePdf(pages);
 }

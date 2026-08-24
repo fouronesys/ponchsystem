@@ -457,3 +457,38 @@ export const UpdateEmployeeWeeklyScheduleResponse = zod.object({
 })
 
 
+/**
+ * @summary Apply one weekly schedule to multiple employees
+ */
+
+export const applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax = 200;
+
+export const applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMin = 0;
+export const applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMax = 6;
+
+export const applyWeeklyScheduleToEmployeesBodyDaysItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const applyWeeklyScheduleToEmployeesBodyDaysItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const applyWeeklyScheduleToEmployeesBodyDaysItemMealStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const applyWeeklyScheduleToEmployeesBodyDaysItemMealEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const applyWeeklyScheduleToEmployeesBodyDaysMin = 7;
+export const applyWeeklyScheduleToEmployeesBodyDaysMax = 7;
+
+
+
+export const ApplyWeeklyScheduleToEmployeesBody = zod.object({
+  "employeeIds": zod.array(zod.string().min(1)).min(1).max(applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMin).max(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMax),
+  "startTime": zod.string().regex(applyWeeklyScheduleToEmployeesBodyDaysItemStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(applyWeeklyScheduleToEmployeesBodyDaysItemEndTimeRegExp).nullable(),
+  "mealStart": zod.string().regex(applyWeeklyScheduleToEmployeesBodyDaysItemMealStartRegExp).nullable(),
+  "mealEnd": zod.string().regex(applyWeeklyScheduleToEmployeesBodyDaysItemMealEndRegExp).nullable()
+})).min(applyWeeklyScheduleToEmployeesBodyDaysMin).max(applyWeeklyScheduleToEmployeesBodyDaysMax)
+})
+
+export const ApplyWeeklyScheduleToEmployeesResponse = zod.object({
+  "updatedEmployeeIds": zod.array(zod.string()),
+  "updatedCount": zod.number()
+})
+
+

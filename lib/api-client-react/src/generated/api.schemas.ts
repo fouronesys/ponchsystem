@@ -273,6 +273,25 @@ export interface WeeklyScheduleInput {
   days: WeeklyScheduleDay[];
 }
 
+export interface BulkWeeklyScheduleInput {
+  /**
+     * @minItems 1
+     * @maxItems 200
+     * @items.minLength 1
+     */
+  employeeIds: string[];
+  /**
+     * @minItems 7
+     * @maxItems 7
+     */
+  days: WeeklyScheduleDay[];
+}
+
+export interface BulkWeeklyScheduleResult {
+  updatedEmployeeIds: string[];
+  updatedCount: number;
+}
+
 export type ListAttendanceEventsParams = {
 date?: string;
 };

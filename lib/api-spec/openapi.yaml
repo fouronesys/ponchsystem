@@ -384,6 +384,28 @@ paths:
           description: Invalid schedule
         "404":
           description: Employee not found
+  /admin/employees/schedules/bulk:
+    put:
+      operationId: applyWeeklyScheduleToEmployees
+      tags: [admin]
+      summary: Apply one weekly schedule to multiple employees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkWeeklyScheduleInput"
+      responses:
+        "200":
+          description: Weekly schedule applied to all selected employees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkWeeklyScheduleResult"
+        "400":
+          description: Invalid employees or schedule
+        "404":
+          description: One or more employees were not found
 components:
   headers:
     NoCache:
@@ -603,4 +625,32 @@ components:
           items:
             $ref: "#/components/schemas/WeeklyScheduleDay"
       required: [days]
+    BulkWeeklyScheduleInput:
+      type: object
+      properties:
+        employeeIds:
+          type: array
+          minItems: 1
+          maxItems: 200
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/WeeklyScheduleDay"
+      required: [employeeIds, days]
+    BulkWeeklyScheduleResult:
+      type: object
+      properties:
+        updatedEmployeeIds:
+          type: array
+          items:
+            type: string
+        updatedCount:
+          type: number
+      required: [updatedEmployeeIds, updatedCount]
 

@@ -24,6 +24,8 @@ import type {
   AttendanceScanInput,
   AttendanceStatus,
   AttendanceSummary,
+  BulkWeeklyScheduleInput,
+  BulkWeeklyScheduleResult,
   Employee,
   EmployeeCreateInput,
   EmployeeUpdateInput,
@@ -1652,5 +1654,76 @@ export const useUpdateEmployeeWeeklySchedule = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateEmployeeWeeklyScheduleMutationOptions(options));
+    }
+
+export const getApplyWeeklyScheduleToEmployeesUrl = () => {
+
+
+
+
+  return `/api/admin/employees/schedules/bulk`
+}
+
+/**
+ * @summary Apply one weekly schedule to multiple employees
+ */
+export const applyWeeklyScheduleToEmployees = async (bulkWeeklyScheduleInput: BulkWeeklyScheduleInput, options?: Parameters<typeof customFetch>[1]): Promise<BulkWeeklyScheduleResult> => {
+
+  return customFetch<BulkWeeklyScheduleResult>(getApplyWeeklyScheduleToEmployeesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bulkWeeklyScheduleInput)
+  }
+);}
+
+
+
+
+
+export const getApplyWeeklyScheduleToEmployeesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>, TError,{data: BodyType<BulkWeeklyScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>, TError,{data: BodyType<BulkWeeklyScheduleInput>}, TContext> => {
+
+const mutationKey = ['applyWeeklyScheduleToEmployees'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>, {data: BodyType<BulkWeeklyScheduleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyWeeklyScheduleToEmployees(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyWeeklyScheduleToEmployeesMutationResult = NonNullable<Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>>
+    export type ApplyWeeklyScheduleToEmployeesMutationBody = BodyType<BulkWeeklyScheduleInput>
+    export type ApplyWeeklyScheduleToEmployeesMutationError = ErrorType<void>
+
+    /**
+ * @summary Apply one weekly schedule to multiple employees
+ */
+export const useApplyWeeklyScheduleToEmployees = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>, TError,{data: BodyType<BulkWeeklyScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyWeeklyScheduleToEmployees>>,
+        TError,
+        {data: BodyType<BulkWeeklyScheduleInput>},
+        TContext
+      > => {
+      return useMutation(getApplyWeeklyScheduleToEmployeesMutationOptions(options));
     }
 
