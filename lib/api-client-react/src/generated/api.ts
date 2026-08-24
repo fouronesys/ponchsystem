@@ -33,7 +33,9 @@ import type {
   QrDisplayLink,
   QrDisplayStatus,
   QrStatus,
-  SessionResponse
+  SessionResponse,
+  WeeklySchedule,
+  WeeklyScheduleInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1254,5 +1256,231 @@ export const useUpdateEmployee = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateEmployeeMutationOptions(options));
+    }
+
+export const getGetMyWeeklyScheduleUrl = () => {
+
+
+
+
+  return `/api/attendance/schedule`
+}
+
+/**
+ * @summary Get the current employee weekly schedule
+ */
+export const getMyWeeklySchedule = async ( options?: Parameters<typeof customFetch>[1]): Promise<WeeklySchedule> => {
+
+  return customFetch<WeeklySchedule>(getGetMyWeeklyScheduleUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyWeeklyScheduleQueryKey = () => {
+    return [
+    `/api/attendance/schedule`
+    ] as const;
+    }
+
+
+export const getGetMyWeeklyScheduleQueryOptions = <TData = Awaited<ReturnType<typeof getMyWeeklySchedule>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWeeklySchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyWeeklyScheduleQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyWeeklySchedule>>> = ({ signal }) => getMyWeeklySchedule({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyWeeklySchedule>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyWeeklyScheduleQueryResult = NonNullable<Awaited<ReturnType<typeof getMyWeeklySchedule>>>
+export type GetMyWeeklyScheduleQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current employee weekly schedule
+ */
+
+export function useGetMyWeeklySchedule<TData = Awaited<ReturnType<typeof getMyWeeklySchedule>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWeeklySchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyWeeklyScheduleQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmployeeWeeklyScheduleUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/employees/${id}/schedule`
+}
+
+/**
+ * @summary Get an employee weekly schedule
+ */
+export const getEmployeeWeeklySchedule = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<WeeklySchedule> => {
+
+  return customFetch<WeeklySchedule>(getGetEmployeeWeeklyScheduleUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmployeeWeeklyScheduleQueryKey = (id: string,) => {
+    return [
+    `/api/admin/employees/${id}/schedule`
+    ] as const;
+    }
+
+
+export const getGetEmployeeWeeklyScheduleQueryOptions = <TData = Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmployeeWeeklyScheduleQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>> = ({ signal }) => getEmployeeWeeklySchedule(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmployeeWeeklyScheduleQueryResult = NonNullable<Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>>
+export type GetEmployeeWeeklyScheduleQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get an employee weekly schedule
+ */
+
+export function useGetEmployeeWeeklySchedule<TData = Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmployeeWeeklySchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmployeeWeeklyScheduleQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateEmployeeWeeklyScheduleUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/employees/${id}/schedule`
+}
+
+/**
+ * @summary Replace an employee weekly schedule
+ */
+export const updateEmployeeWeeklySchedule = async (id: string,
+    weeklyScheduleInput: WeeklyScheduleInput, options?: Parameters<typeof customFetch>[1]): Promise<WeeklySchedule> => {
+
+  return customFetch<WeeklySchedule>(getUpdateEmployeeWeeklyScheduleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(weeklyScheduleInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateEmployeeWeeklyScheduleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>, TError,{id: string;data: BodyType<WeeklyScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>, TError,{id: string;data: BodyType<WeeklyScheduleInput>}, TContext> => {
+
+const mutationKey = ['updateEmployeeWeeklySchedule'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>, {id: string;data: BodyType<WeeklyScheduleInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateEmployeeWeeklySchedule(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEmployeeWeeklyScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>>
+    export type UpdateEmployeeWeeklyScheduleMutationBody = BodyType<WeeklyScheduleInput>
+    export type UpdateEmployeeWeeklyScheduleMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace an employee weekly schedule
+ */
+export const useUpdateEmployeeWeeklySchedule = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>, TError,{id: string;data: BodyType<WeeklyScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEmployeeWeeklySchedule>>,
+        TError,
+        {id: string;data: BodyType<WeeklyScheduleInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateEmployeeWeeklyScheduleMutationOptions(options));
     }
 

@@ -212,6 +212,51 @@ export interface EmployeeUpdateInput {
   active?: boolean;
 }
 
+export interface WeeklyScheduleDay {
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  startTime: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  endTime: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  mealStart: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  mealEnd: string | null;
+}
+
+export interface WeeklySchedule {
+  employeeId: string;
+  /**
+     * @minItems 7
+     * @maxItems 7
+     */
+  days: WeeklyScheduleDay[];
+}
+
+export interface WeeklyScheduleInput {
+  /**
+     * @minItems 7
+     * @maxItems 7
+     */
+  days: WeeklyScheduleDay[];
+}
+
 export type ListAttendanceEventsParams = {
 date?: string;
 };

@@ -125,6 +125,54 @@ sqlite.exec(`
   );
   CREATE UNIQUE INDEX IF NOT EXISTS employees_username_unique ON employees (username);
 
+  CREATE TABLE IF NOT EXISTS weekly_schedules (
+    id TEXT PRIMARY KEY NOT NULL,
+    employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+    start_time TEXT,
+    end_time TEXT,
+    meal_start TEXT,
+    meal_end TEXT
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS weekly_schedules_employee_day_unique
+    ON weekly_schedules (employee_id, day_of_week);
+  CREATE INDEX IF NOT EXISTS weekly_schedules_employee_idx
+    ON weekly_schedules (employee_id);
+  CREATE TRIGGER IF NOT EXISTS weekly_schedules_day_of_week_insert
+  BEFORE INSERT ON weekly_schedules
+  FOR EACH ROW WHEN NEW.day_of_week < 0 OR NEW.day_of_week > 6
+    OR NEW.day_of_week != CAST(NEW.day_of_week AS INTEGER)
+  BEGIN
+    SELECT RAISE(ABORT, 'weekly schedule day must be an integer from 0 to 6');
+  END;
+  CREATE TRIGGER IF NOT EXISTS weekly_schedules_day_of_week_update
+  BEFORE UPDATE OF day_of_week ON weekly_schedules
+  FOR EACH ROW WHEN NEW.day_of_week < 0 OR NEW.day_of_week > 6
+    OR NEW.day_of_week != CAST(NEW.day_of_week AS INTEGER)
+  BEGIN
+    SELECT RAISE(ABORT, 'weekly schedule day must be an integer from 0 to 6');
+  END;
+  CREATE TRIGGER IF NOT EXISTS employees_create_weekly_schedule
+  AFTER INSERT ON employees
+  FOR EACH ROW
+  BEGIN
+    INSERT OR IGNORE INTO weekly_schedules (id, employee_id, day_of_week) VALUES
+      (lower(hex(randomblob(16))), NEW.id, 0),
+      (lower(hex(randomblob(16))), NEW.id, 1),
+      (lower(hex(randomblob(16))), NEW.id, 2),
+      (lower(hex(randomblob(16))), NEW.id, 3),
+      (lower(hex(randomblob(16))), NEW.id, 4),
+      (lower(hex(randomblob(16))), NEW.id, 5),
+      (lower(hex(randomblob(16))), NEW.id, 6);
+  END;
+  INSERT OR IGNORE INTO weekly_schedules (id, employee_id, day_of_week)
+  SELECT lower(hex(randomblob(16))), employees.id, days.day_of_week
+  FROM employees
+  CROSS JOIN (
+    SELECT 0 AS day_of_week UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+    UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6
+  ) AS days;
+
   CREATE TABLE IF NOT EXISTS auth_sessions (
     id TEXT PRIMARY KEY NOT NULL,
     employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,

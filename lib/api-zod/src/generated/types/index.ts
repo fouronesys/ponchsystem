@@ -25,3 +25,6 @@ export * from './qrStatus';
 export * from './sessionEmployee';
 export * from './sessionEmployeeRole';
 export * from './sessionResponse';
+export * from './weeklySchedule';
+export * from './weeklyScheduleDay';
+export * from './weeklyScheduleInput';
