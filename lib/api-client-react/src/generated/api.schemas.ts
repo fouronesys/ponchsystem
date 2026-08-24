@@ -285,7 +285,7 @@ export interface BulkWeeklyScheduleInput {
      * @maxItems 200
      * @items.minLength 1
      */
-  employeeIds: string[];
+  employeeIds?: string[];
   /**
      * @minLength 1
      * @maxLength 120

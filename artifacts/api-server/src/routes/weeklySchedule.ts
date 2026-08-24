@@ -74,6 +74,11 @@ router.put("/admin/employees/schedules/bulk", requireAdministrator, async (req, 
     res.status(400).json({ error: "La selección o el formato del horario no es válido." });
     return;
   }
+  const selectedEmployeeIds = parsed.data.employeeIds ?? [];
+  if (selectedEmployeeIds.length === 0 && !parsed.data.department) {
+    res.status(400).json({ error: "Debes seleccionar empleados o un departamento." });
+    return;
+  }
   const departmentEmployeeIds = parsed.data.department
     ? (await db
       .select({ id: employeesTable.id })
@@ -81,8 +86,8 @@ router.put("/admin/employees/schedules/bulk", requireAdministrator, async (req, 
       .where(and(eq(employeesTable.department, parsed.data.department), eq(employeesTable.active, true))))
       .map(({ id }) => id)
     : [];
-  const employeeIds = [...new Set([...parsed.data.employeeIds, ...departmentEmployeeIds])];
-  if (new Set(parsed.data.employeeIds).size !== parsed.data.employeeIds.length) {
+  const employeeIds = [...new Set([...selectedEmployeeIds, ...departmentEmployeeIds])];
+  if (new Set(selectedEmployeeIds).size !== selectedEmployeeIds.length) {
     res.status(400).json({ error: "No puedes repetir empleados en la selección." });
     return;
   }
