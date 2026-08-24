@@ -19,7 +19,7 @@ function FarbotMascot({ className = "" }: { className?: string }) {
         <div className="farbot-face">
           <span className="farbot-eye farbot-eye--left" />
           <span className="farbot-eye farbot-eye--right" />
-          <div className="farbot-mouth"><span className="farbot-tongue" /></div>
+          <div className="farbot-mouth"><span className="farbot-tongue" /><span className="farbot-mouth-paper" /></div>
         </div>
         <div className="farbot-belly" />
         <div className="farbot-bumper" />
