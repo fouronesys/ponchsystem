@@ -23,6 +23,8 @@ export const employeesTable = sqliteTable(
     profilePhotoPath: text("profile_photo_path"),
     role: text("role").notNull().default("employee"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    employmentStartDate: text("employment_start_date").notNull().default("1970-01-01"),
+    employmentEndDate: text("employment_end_date"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

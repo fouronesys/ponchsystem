@@ -19,6 +19,8 @@ function toEmployeeResponse(employee: typeof employeesTable.$inferSelect) {
     phone: employee.phone,
     jobTitle: employee.jobTitle,
     active: employee.active,
+    employmentStartDate: employee.employmentStartDate,
+    employmentEndDate: employee.employmentEndDate,
     role: employee.role,
     profilePhotoUrl: employee.profilePhotoPath ? `/api/media/${employee.profilePhotoPath}` : null,
     createdAt: employee.createdAt,
@@ -27,6 +29,18 @@ function toEmployeeResponse(employee: typeof employeesTable.$inferSelect) {
 
 function optionalText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function isoDate(value: unknown): string | null {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function validDateRange(startDate: string, endDate: string | null) {
+  return !endDate || endDate >= startDate;
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 router.get("/admin/employees", requireAdministrator, async (_req, res): Promise<void> => {
@@ -62,6 +76,8 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
         profilePhotoPath,
         role: "employee",
         active: true,
+        employmentStartDate: isoDate(req.body?.employmentStartDate) ?? todayIsoDate(),
+        employmentEndDate: isoDate(req.body?.employmentEndDate),
       })
       .returning();
     await ensureWeeklySchedule(created.id);
@@ -87,6 +103,36 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
     const values: Partial<typeof employeesTable.$inferInsert> = {
       active: typeof req.body?.active === "boolean" ? req.body.active : existing.active,
     };
+    if ("employmentStartDate" in (req.body ?? {})) {
+      const startDate = isoDate(req.body.employmentStartDate);
+      if (!startDate) {
+        res.status(400).json({ error: "La fecha de inicio laboral no es válida." });
+        return;
+      }
+      values.employmentStartDate = startDate;
+    }
+    if ("employmentEndDate" in (req.body ?? {})) {
+      const endDate = req.body.employmentEndDate === null || req.body.employmentEndDate === ""
+        ? null
+        : isoDate(req.body.employmentEndDate);
+      if (req.body.employmentEndDate !== null && req.body.employmentEndDate !== "" && !endDate) {
+        res.status(400).json({ error: "La fecha de finalización laboral no es válida." });
+        return;
+      }
+      values.employmentEndDate = endDate;
+    } else if (values.active === false && existing.active) {
+      values.employmentEndDate = todayIsoDate();
+    } else if (values.active === true && !existing.active) {
+      values.employmentEndDate = null;
+    }
+    const startDate = values.employmentStartDate ?? existing.employmentStartDate;
+    const endDate = values.employmentEndDate === undefined
+      ? existing.employmentEndDate
+      : values.employmentEndDate;
+    if (!validDateRange(startDate, endDate)) {
+      res.status(400).json({ error: "La fecha de finalización debe ser posterior o igual al inicio laboral." });
+      return;
+    }
     if (typeof req.body?.displayName === "string" && req.body.displayName.trim()) {
       values.displayName = req.body.displayName.trim();
     }
