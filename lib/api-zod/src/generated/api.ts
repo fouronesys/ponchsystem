@@ -485,7 +485,7 @@ export const applyWeeklyScheduleToEmployeesBodyDaysMax = 7;
 
 
 export const ApplyWeeklyScheduleToEmployeesBody = zod.object({
-  "employeeIds": zod.array(zod.string().min(1)).min(1).max(applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax),
+  "employeeIds": zod.array(zod.string().min(1)).min(1).max(applyWeeklyScheduleToEmployeesBodyEmployeeIdsMax).optional(),
   "department": zod.string().min(1).max(applyWeeklyScheduleToEmployeesBodyDepartmentMax).optional(),
   "days": zod.array(zod.object({
   "dayOfWeek": zod.number().min(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMin).max(applyWeeklyScheduleToEmployeesBodyDaysItemDayOfWeekMax),

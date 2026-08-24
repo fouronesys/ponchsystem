@@ -649,7 +649,7 @@ components:
           maxItems: 7
           items:
             $ref: "#/components/schemas/WeeklyScheduleDay"
-      required: [employeeIds, days]
+      required: [days]
     BulkWeeklyScheduleResult:
       type: object
       properties:
