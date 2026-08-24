@@ -368,6 +368,23 @@ function pdfRect(x: number, y: number, width: number, height: number, fill: PdfC
   return `${color(fill)} rg ${x} ${y} ${width} ${height} re f\n`;
 }
 
+function pdfCircle(x: number, y: number, radius: number, fill: PdfColor): string {
+  const k = radius * 0.5522848;
+  return [
+    `${color(fill)} rg`,
+    `${x + radius} ${y} m`,
+    `${x + radius} ${y + k} ${x + k} ${y + radius} ${x} ${y + radius} c`,
+    `${x - k} ${y + radius} ${x - radius} ${y + k} ${x - radius} ${y} c`,
+    `${x - radius} ${y - k} ${x - k} ${y - radius} ${x} ${y - radius} c`,
+    `${x + k} ${y - radius} ${x + radius} ${y - k} ${x + radius} ${y} c`,
+    "f\n",
+  ].join(" ");
+}
+
+function pdfStrokePath(path: string, stroke: PdfColor, width: number): string {
+  return `${color(stroke)} RG ${width} w ${path} S\n`;
+}
+
 function pdfLine(x: number, y: number, width: number, stroke: PdfColor): string {
   return `${color(stroke)} RG 0.6 w ${x} ${y} m ${x + width} ${y} l S\n`;
 }
@@ -383,14 +400,31 @@ function pdfLabel(
   return `${color(fill)} rg BT /${font} ${size} Tf ${x} ${y} Td (${pdfText(value)}) Tj ET\n`;
 }
 
+function farbotLogo(x: number, y: number): string {
+  return [
+    pdfRect(x, y, 40, 40, BLUE),
+    pdfStrokePath(` ${x + 20} ${y + 34} m ${x + 20} ${y + 29} l`, [0.96, 0.73, 0.26], 2.2),
+    pdfStrokePath(` ${x + 15} ${y + 34} m ${x + 25} ${y + 34} l`, [0.96, 0.73, 0.26], 2.2),
+    pdfCircle(x + 20, y + 37, 2.8, [0.96, 0.73, 0.26]),
+    pdfRect(x + 8, y + 12, 24, 19, [0.20, 0.45, 0.58]),
+    pdfRect(x + 10, y + 17, 20, 11, [0.87, 0.97, 1]),
+    pdfCircle(x + 15, y + 22.5, 2.6, NAVY),
+    pdfCircle(x + 25, y + 22.5, 2.6, NAVY),
+    pdfCircle(x + 15.8, y + 23.3, 0.8, [1, 1, 1]),
+    pdfCircle(x + 25.8, y + 23.3, 0.8, [1, 1, 1]),
+    pdfStrokePath(` ${x + 15} ${y + 15.5} m ${x + 18} ${y + 14} l ${x + 22} ${y + 14} l ${x + 25} ${y + 15.5}`, [0.18, 0.40, 0.52], 1.3),
+    pdfRect(x + 14, y + 8, 12, 5, [0.96, 0.73, 0.26]),
+    pdfStrokePath(` ${x + 16.5} ${y + 10.5} m ${x + 18.5} ${y + 8.8} l ${x + 23.5} ${y + 12.2}`, NAVY, 1.4),
+  ].join("");
+}
+
 function pageHeader(pageNumber: number, pageCount: number): string {
   return [
-    pdfRect(0, 742, 612, 50, NAVY),
-    pdfRect(40, 754, 28, 28, BLUE),
-    pdfLabel(47, 764, "FC", 10, "F2", [1, 1, 1]),
-    pdfLabel(82, 768, "FarCheck RD", 14, "F2", [1, 1, 1]),
-    pdfLabel(82, 754, "Control de asistencia", 8, "F1", [0.78, 0.87, 0.95]),
-    pdfLabel(500, 763, `${pageNumber} / ${pageCount}`, 8, "F1", [0.78, 0.87, 0.95]),
+    pdfRect(0, 732, 612, 60, NAVY),
+    farbotLogo(40, 742),
+    pdfLabel(94, 766, "FarCheck RD", 15, "F2", [1, 1, 1]),
+    pdfLabel(94, 750, "Control de asistencia", 8, "F1", [0.78, 0.87, 0.95]),
+    pdfLabel(500, 759, `${pageNumber} / ${pageCount}`, 8, "F1", [0.78, 0.87, 0.95]),
   ].join("");
 }
 
@@ -492,6 +526,8 @@ export function payrollReportPdf(report: PayrollAttendanceReport): Buffer {
   if (report.employees.length > 16) {
     summary += pdfLabel(46, 72, `Consulta el detalle diario de los ${report.employees.length} empleados en las páginas siguientes.`, 8, "F1", MUTED);
   }
+  summary += pdfLine(46, 54, 520, PALE_BLUE);
+  summary += pdfLabel(46, 38, "Farbot · Reporte generado por FarCheck RD", 7, "F1", MUTED);
   pages.push(summary);
 
   employeePages.forEach(({ employee, days }, employeePageIndex) => {
