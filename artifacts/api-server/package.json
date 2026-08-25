@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test": "node --import tsx --test src/**/*.test.ts",
+    "test:typecheck-schema-regression": "node ./scripts/typecheck-schema-regression.mjs",
     "typecheck": "pnpm exec tsc --build ../../lib/db/tsconfig.json --force && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
