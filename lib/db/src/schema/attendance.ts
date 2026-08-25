@@ -99,6 +99,7 @@ export const attendanceTokensTable = sqliteTable(
     id: text("id").primaryKey(),
     tokenHash: text("token_hash").notNull(),
     encryptedToken: text("encrypted_token").notNull(),
+    tokenType: text("token_type").notNull().default("qr"),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     usedAt: integer("used_at", { mode: "timestamp_ms" }),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
@@ -109,8 +110,8 @@ export const attendanceTokensTable = sqliteTable(
   (table) => [
     uniqueIndex("attendance_tokens_hash_unique").on(table.tokenHash),
     uniqueIndex("attendance_tokens_one_active_unique")
-      .on(table.isActive)
-      .where(sql`${table.isActive} = 1`),
+      .on(table.isActive, table.tokenType)
+      .where(sql`${table.isActive} = 1 AND ${table.tokenType} = 'qr'`),
     index("attendance_tokens_validation_idx").on(
       table.tokenHash,
       table.isActive,
@@ -145,6 +146,7 @@ export const attendanceEventsTable = sqliteTable(
       .notNull()
       .references(() => employeesTable.id, { onDelete: "restrict" }),
     type: text("type").notNull(),
+    recordMethod: text("record_method").notNull().default("qr"),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

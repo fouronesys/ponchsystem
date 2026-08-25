@@ -21,6 +21,7 @@ import type {
 
 import type {
   AttendanceEvent,
+  AttendanceManualInput,
   AttendanceScanInput,
   AttendanceStatus,
   AttendanceSummary,
@@ -512,6 +513,77 @@ export const useScanAttendanceQr = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getScanAttendanceQrMutationOptions(options));
+    }
+
+export const getRecordManualAttendanceUrl = () => {
+
+
+
+
+  return `/api/attendance/manual`
+}
+
+/**
+ * @summary Record attendance for the authenticated employee without a QR
+ */
+export const recordManualAttendance = async (attendanceManualInput: AttendanceManualInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceEvent> => {
+
+  return customFetch<AttendanceEvent>(getRecordManualAttendanceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attendanceManualInput)
+  }
+);}
+
+
+
+
+
+export const getRecordManualAttendanceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext> => {
+
+const mutationKey = ['recordManualAttendance'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordManualAttendance>>, {data: BodyType<AttendanceManualInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordManualAttendance(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordManualAttendanceMutationResult = NonNullable<Awaited<ReturnType<typeof recordManualAttendance>>>
+    export type RecordManualAttendanceMutationBody = BodyType<AttendanceManualInput>
+    export type RecordManualAttendanceMutationError = ErrorType<void>
+
+    /**
+ * @summary Record attendance for the authenticated employee without a QR
+ */
+export const useRecordManualAttendance = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordManualAttendance>>,
+        TError,
+        {data: BodyType<AttendanceManualInput>},
+        TContext
+      > => {
+      return useMutation(getRecordManualAttendanceMutationOptions(options));
     }
 
 export const getGetQrStatusUrl = () => {

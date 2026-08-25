@@ -125,7 +125,7 @@ function tokenStatus(token: AttendanceToken, rawToken: string) {
   };
 }
 
-function newTokenValues() {
+function newTokenValues(tokenType: "qr" | "manual" = "qr") {
   const rawToken = createRotatingToken();
   return {
     rawToken,
@@ -133,6 +133,7 @@ function newTokenValues() {
       id: randomUUID(),
       tokenHash: hashToken(rawToken),
       encryptedToken: encryptToken(rawToken),
+      tokenType,
       expiresAt: tokenExpiry(),
       isActive: true,
     },
@@ -147,7 +148,7 @@ async function issueNewToken(): Promise<{ token: AttendanceToken; rawToken: stri
         tx
           .update(attendanceTokensTable)
           .set({ isActive: false })
-          .where(eq(attendanceTokensTable.isActive, true))
+          .where(and(eq(attendanceTokensTable.isActive, true), eq(attendanceTokensTable.tokenType, "qr")))
           .run();
         const created = tx
           .insert(attendanceTokensTable)
@@ -167,6 +168,7 @@ async function issueNewToken(): Promise<{ token: AttendanceToken; rawToken: stri
         .where(
           and(
             eq(attendanceTokensTable.isActive, true),
+            eq(attendanceTokensTable.tokenType, "qr"),
             gt(attendanceTokensTable.expiresAt, new Date()),
           ),
         )
@@ -181,6 +183,14 @@ async function issueNewToken(): Promise<{ token: AttendanceToken; rawToken: stri
   throw new Error("Unable to issue rotating QR token");
 }
 
+function issueManualToken(): string {
+  const next = newTokenValues("manual");
+  db.transaction((tx) => {
+    tx.insert(attendanceTokensTable).values(next.values).run();
+  });
+  return next.rawToken;
+}
+
 async function currentToken(): Promise<{ token: AttendanceToken; rawToken: string }> {
   const [active] = await db
     .select()
@@ -188,6 +198,7 @@ async function currentToken(): Promise<{ token: AttendanceToken; rawToken: strin
     .where(
       and(
         eq(attendanceTokensTable.isActive, true),
+        eq(attendanceTokensTable.tokenType, "qr"),
         gt(attendanceTokensTable.expiresAt, new Date()),
       ),
     )
@@ -251,6 +262,104 @@ router.get(
   },
 );
 
+async function recordAttendanceWithToken(
+  req: AuthenticatedRequest,
+  rawToken: string,
+  selfie: string,
+  tokenType: "qr" | "manual",
+) {
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+    const employee = req.employee!;
+    const scanKey = `${tokenType}:${employee.id}:${clientIp}`;
+
+    let selfiePath: string;
+    try {
+      selfiePath = await saveImage(selfie, "selfies");
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "La selfie es obligatoria.");
+    }
+
+    const now = new Date();
+    const tokenHash = hashToken(rawToken);
+    try {
+      const schedule = await getWeeklySchedule(employee.id);
+      const event = db.transaction((tx) => {
+        const consumed = tx
+          .update(attendanceTokensTable)
+          .set({ usedAt: now, isActive: false })
+          .where(
+            and(
+              eq(attendanceTokensTable.tokenHash, tokenHash),
+              eq(attendanceTokensTable.tokenType, tokenType),
+              eq(attendanceTokensTable.isActive, true),
+              isNull(attendanceTokensTable.usedAt),
+              gt(attendanceTokensTable.expiresAt, now),
+            ),
+          )
+          .returning()
+          .get();
+
+        if (!consumed) return null;
+
+        const events = tx
+          .select()
+          .from(attendanceEventsTable)
+          .where(eq(attendanceEventsTable.employeeId, employee.id))
+          .orderBy(desc(attendanceEventsTable.occurredAt))
+          .limit(50)
+          .all();
+        const today = bogotaDay(now);
+        const todayLatest = events.find((item) => bogotaDay(item.occurredAt) === today);
+        if (
+          tokenType === "manual" &&
+          events[0] &&
+          events[0].recordMethod === "manual" &&
+          now.getTime() - events[0].occurredAt.getTime() < 10_000
+        ) {
+          return null;
+        }
+        const previousOpenEvent = !todayLatest && events.find((item) => (
+          item.type === "check_in" &&
+          now.getTime() - item.occurredAt.getTime() <= 18 * 60 * 60 * 1000 &&
+          scheduleDayForDate(schedule.days, item.occurredAt)?.endTime !== null
+        ));
+        const created = tx
+          .insert(attendanceEventsTable)
+          .values({
+            id: randomUUID(),
+            employeeId: employee.id,
+            type: todayLatest?.type === "check_in" || previousOpenEvent ? "check_out" : "check_in",
+            recordMethod: tokenType,
+            occurredAt: now,
+            location: null,
+            deviceLabel: req.get("user-agent")?.slice(0, 180) ?? null,
+            sessionId: req.session?.id ?? null,
+            loginAt: req.session?.loginAt ?? null,
+            selfiePath,
+          })
+          .returning()
+          .get();
+        if (!created) throw new Error("Unable to create attendance event");
+
+        if (tokenType === "qr") {
+          tx.insert(attendanceTokensTable).values(newTokenValues("qr").values).run();
+        }
+        return created;
+      });
+
+      if (!event) {
+        await removeImage(selfiePath);
+        return null;
+      }
+
+      clearScanAttempts(scanKey);
+      return { event, schedule };
+    } catch (error) {
+      await removeImage(selfiePath);
+      throw error;
+    }
+}
+
 router.post(
   "/attendance/scan",
   requireAuthenticated,
@@ -262,91 +371,56 @@ router.post(
     }
 
     const clientIp = req.ip || req.socket.remoteAddress || "unknown";
-    const employee = req.employee!;
-    const scanKey = `${employee.id}:${clientIp}`;
+    const scanKey = `qr:${req.employee!.id}:${clientIp}`;
     if (!canAttemptScan(scanKey)) {
-      req.log.warn({ employeeId: employee.id }, "QR scan rate limit exceeded");
+      req.log.warn({ employeeId: req.employee!.id }, "QR scan rate limit exceeded");
       res.status(429).json({ error: "Demasiados intentos. Espera unos minutos." });
       return;
     }
 
-    let selfiePath: string;
     try {
-      selfiePath = await saveImage(parsed.data.selfie, "selfies");
+      const result = await recordAttendanceWithToken(req, parsed.data.token, parsed.data.selfie, "qr");
+      if (!result) {
+        req.log.warn({ employeeId: req.employee!.id }, "QR token rejected");
+        res.status(400).json({ error: "El QR expiró, ya fue utilizado o no es válido." });
+        return;
+      }
+      res.json(ScanAttendanceQrResponse.parse(eventResponse(result.event, req.employee!, result.schedule.days)));
     } catch (error) {
-      res.status(400).json({
-        error: error instanceof Error ? error.message : "La selfie es obligatoria.",
-      });
+      res.status(400).json({ error: error instanceof Error ? error.message : "No pudimos registrar la asistencia." });
+    }
+  },
+);
+
+router.post(
+  "/attendance/manual",
+  requireAuthenticated,
+  async (req: AuthenticatedRequest, res): Promise<void> => {
+    const parsed = ScanAttendanceQrBody.shape.selfie.safeParse(req.body?.selfie);
+    if (!parsed.success) {
+      res.status(400).json({ error: "La selfie es obligatoria." });
       return;
     }
 
-    const now = new Date();
-    const tokenHash = hashToken(parsed.data.token);
-
-    const event = db.transaction((tx) => {
-      const consumed = tx
-        .update(attendanceTokensTable)
-        .set({ usedAt: now, isActive: false })
-        .where(
-          and(
-            eq(attendanceTokensTable.tokenHash, tokenHash),
-            eq(attendanceTokensTable.isActive, true),
-            isNull(attendanceTokensTable.usedAt),
-            gt(attendanceTokensTable.expiresAt, now),
-          ),
-        )
-        .returning()
-        .get();
-
-      if (!consumed) {
-        return null;
-      }
-
-      const events = tx
-        .select()
-        .from(attendanceEventsTable)
-        .where(eq(attendanceEventsTable.employeeId, employee.id))
-        .orderBy(desc(attendanceEventsTable.occurredAt))
-        .limit(50)
-        .all();
-      const today = bogotaDay(now);
-      const todayLatest = events.find(
-        (item) => bogotaDay(item.occurredAt) === today,
-      );
-      const created = tx
-        .insert(attendanceEventsTable)
-        .values({
-          id: randomUUID(),
-          employeeId: employee.id,
-          type: todayLatest?.type === "check_in" ? "check_out" : "check_in",
-          occurredAt: now,
-          location: null,
-          deviceLabel: req.get("user-agent")?.slice(0, 180) ?? null,
-          sessionId: req.session?.id ?? null,
-          loginAt: req.session?.loginAt ?? null,
-          selfiePath,
-        })
-        .returning()
-        .get();
-      if (!created) {
-        throw new Error("Unable to create attendance event");
-      }
-
-      const next = newTokenValues();
-      tx.insert(attendanceTokensTable).values(next.values).run();
-      return created;
-    });
-
-    if (!event) {
-      await removeImage(selfiePath);
-      req.log.warn({ employeeId: employee.id }, "QR token rejected");
-      res.status(400).json({ error: "El QR expiró, ya fue utilizado o no es válido." });
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+    const scanKey = `manual:${req.employee!.id}:${clientIp}`;
+    if (!canAttemptScan(scanKey)) {
+      req.log.warn({ employeeId: req.employee!.id }, "Manual attendance rate limit exceeded");
+      res.status(429).json({ error: "Demasiados intentos. Espera unos minutos." });
       return;
     }
 
-    clearScanAttempts(scanKey);
-    const schedule = await getWeeklySchedule(employee.id);
-    res.json(ScanAttendanceQrResponse.parse(eventResponse(event, employee, schedule.days)));
+    try {
+      const manualToken = issueManualToken();
+      const result = await recordAttendanceWithToken(req, manualToken, parsed.data, "manual");
+      if (!result) {
+        res.status(400).json({ error: "El registro manual expiró o ya fue utilizado." });
+        return;
+      }
+      res.json(ScanAttendanceQrResponse.parse(eventResponse(result.event, req.employee!, result.schedule.days)));
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "No pudimos registrar la asistencia." });
+    }
   },
 );
 

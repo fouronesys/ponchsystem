@@ -83,18 +83,22 @@ export function attendanceTimingStatus(
   scheduleDay: Pick<WeeklyScheduleDayInput, "startTime" | "endTime"> | null | undefined,
 ): AttendanceTimingStatus {
   if (!scheduleDay?.startTime || !scheduleDay.endTime) return "day_off";
-  const actual = bogotaParts(occurredAt).minutes;
+  const parts = bogotaParts(occurredAt);
+  const actual = parts.minutes;
   const start = minutes(scheduleDay.startTime);
   const end = minutes(scheduleDay.endTime);
+  const overnight = end < start;
+  const normalizedActual = overnight && actual < end ? actual + 24 * 60 : actual;
+  const normalizedEnd = overnight ? end + 24 * 60 : end;
   if (type === "check_in") {
-    if (actual < start) return "early";
-    if (actual === start) return "on_time";
-    if (actual <= end) return "late";
+    if (normalizedActual < start) return "early";
+    if (normalizedActual === start) return "on_time";
+    if (normalizedActual <= normalizedEnd) return "late";
     return "outside_shift";
   }
-  if (actual < start || actual > end) return "outside_shift";
-  if (actual < end) return "early";
-  if (actual === end) return "on_time";
+  if (normalizedActual < start || normalizedActual > normalizedEnd) return "outside_shift";
+  if (normalizedActual < normalizedEnd) return "early";
+  if (normalizedActual === normalizedEnd) return "on_time";
   return "late";
 }
 
@@ -102,7 +106,29 @@ export function scheduleDayForDate<T extends Pick<WeeklyScheduleDayInput, "dayOf
   days: T[],
   date: Date,
 ): T | undefined {
-  return days.find((day) => day.dayOfWeek === bogotaParts(date).dayOfWeek);
+  const current = bogotaParts(date);
+  const sameDay = days.find((day) => day.dayOfWeek === current.dayOfWeek);
+  const sameDayWithHours = sameDay as (T & Pick<WeeklyScheduleDayInput, "startTime" | "endTime">) | undefined;
+  if (
+    sameDayWithHours?.startTime &&
+    sameDayWithHours.endTime &&
+    minutes(sameDayWithHours.endTime) >= minutes(sameDayWithHours.startTime)
+  ) {
+    return sameDay;
+  }
+
+  const previousDayOfWeek = (current.dayOfWeek + 6) % DAYS_IN_WEEK;
+  const previous = days.find((day) => day.dayOfWeek === previousDayOfWeek);
+  const previousWithHours = previous as (T & Pick<WeeklyScheduleDayInput, "startTime" | "endTime">) | undefined;
+  if (
+    previousWithHours?.startTime &&
+    previousWithHours.endTime &&
+    minutes(previousWithHours.endTime) < minutes(previousWithHours.startTime) &&
+    current.minutes < minutes(previousWithHours.endTime)
+  ) {
+    return previous;
+  }
+  return sameDay;
 }
 
 export function validateWeeklySchedule(days: WeeklyScheduleDayInput[]): string | null {
@@ -135,17 +161,24 @@ export function validateWeeklySchedule(days: WeeklyScheduleDayInput[]): string |
     }
     if (!hasStart || !day.startTime || !day.endTime) continue;
 
-    if (minutes(day.startTime) >= minutes(day.endTime)) {
-      return "La entrada debe ser anterior a la salida.";
+    if (minutes(day.startTime) === minutes(day.endTime)) {
+      return "La entrada y la salida no pueden ser iguales.";
     }
     if (!hasMealStart || !day.mealStart || !day.mealEnd) continue;
 
+    const start = minutes(day.startTime);
+    const end = minutes(day.endTime);
+    const overnight = end < start;
+    const shiftEnd = overnight ? end + 24 * 60 : end;
+    const mealStart = minutes(day.mealStart) < start ? minutes(day.mealStart) + 24 * 60 : minutes(day.mealStart);
+    let mealEnd = minutes(day.mealEnd) < start ? minutes(day.mealEnd) + 24 * 60 : minutes(day.mealEnd);
+    if (mealEnd <= mealStart) mealEnd += 24 * 60;
     if (
-      minutes(day.mealStart) >= minutes(day.mealEnd) ||
-      minutes(day.mealStart) <= minutes(day.startTime) ||
-      minutes(day.mealEnd) >= minutes(day.endTime)
+      mealStart <= start ||
+      mealEnd <= mealStart ||
+      mealEnd >= shiftEnd
     ) {
-      return "La comida debe estar completamente dentro de la jornada.";
+      return "La comida debe estar completamente dentro de la jornada, incluso en turnos de madrugada.";
     }
   }
 

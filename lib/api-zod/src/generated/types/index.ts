@@ -8,6 +8,7 @@
 
 export * from './attendanceEvent';
 export * from './attendanceEventType';
+export * from './attendanceManualInput';
 export * from './attendanceScanInput';
 export * from './attendanceStatus';
 export * from './attendanceStatusState';

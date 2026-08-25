@@ -157,6 +157,20 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
       1,
       "el token válido debe crear exactamente un evento",
     );
+    const manualCheckout = await jsonRequest(baseUrl, "/api/attendance/manual", {
+      method: "POST",
+      headers: { cookie },
+      body: JSON.stringify({ selfie: validPng }),
+    });
+    assert.equal(manualCheckout.response.status, 200, `el empleado debe poder registrar su salida sin QR: ${JSON.stringify(manualCheckout.body)}`);
+    assert.equal(manualCheckout.body.type, "check_out");
+
+    const duplicateManual = await jsonRequest(baseUrl, "/api/attendance/manual", {
+      method: "POST",
+      headers: { cookie },
+      body: JSON.stringify({ selfie: validPng }),
+    });
+    assert.equal(duplicateManual.response.status, 400, "un doble envío manual inmediato no debe alternar otra vez el estado");
     assert.equal(
       (await db.select().from(attendanceTokensTable).where(eq(attendanceTokensTable.isActive, true))).length,
       1,

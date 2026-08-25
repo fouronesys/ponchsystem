@@ -112,6 +112,32 @@ export const ScanAttendanceQrResponse = zod.object({
 
 
 /**
+ * @summary Record attendance for the authenticated employee without a QR
+ */
+export const recordManualAttendanceBodySelfieMin = 100;
+
+
+
+export const RecordManualAttendanceBody = zod.object({
+  "selfie": zod.string().min(recordManualAttendanceBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.')
+})
+
+export const RecordManualAttendanceResponse = zod.object({
+  "id": zod.string(),
+  "employeeId": zod.string(),
+  "employeeName": zod.string(),
+  "type": zod.enum(['check_in', 'check_out']),
+  "timestamp": zod.coerce.date(),
+  "location": zod.string().nullable(),
+  "deviceLabel": zod.string().nullable(),
+  "selfieUrl": zod.string().nullable(),
+  "loginAt": zod.coerce.date().nullable(),
+  "timingStatus": zod.enum(['on_time', 'early', 'late', 'outside_shift', 'day_off']),
+  "scheduledTime": zod.string().nullable()
+})
+
+
+/**
  * @summary Get the currently active QR token status
  */
 export const GetQrStatusResponse = zod.object({

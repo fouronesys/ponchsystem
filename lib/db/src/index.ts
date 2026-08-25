@@ -203,6 +203,7 @@ sqlite.exec(`
     id TEXT PRIMARY KEY NOT NULL,
     token_hash TEXT NOT NULL,
     encrypted_token TEXT NOT NULL,
+    token_type TEXT NOT NULL DEFAULT 'qr',
     expires_at INTEGER NOT NULL,
     used_at INTEGER,
     is_active INTEGER NOT NULL DEFAULT 1,
@@ -210,8 +211,6 @@ sqlite.exec(`
   );
   CREATE UNIQUE INDEX IF NOT EXISTS attendance_tokens_hash_unique
     ON attendance_tokens (token_hash);
-  CREATE UNIQUE INDEX IF NOT EXISTS attendance_tokens_one_active_unique
-    ON attendance_tokens (is_active) WHERE is_active = 1;
   CREATE INDEX IF NOT EXISTS attendance_tokens_validation_idx
     ON attendance_tokens (token_hash, is_active, expires_at);
    CREATE INDEX IF NOT EXISTS attendance_tokens_expiry_idx
@@ -233,6 +232,7 @@ sqlite.exec(`
     id TEXT PRIMARY KEY NOT NULL,
     employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
     type TEXT NOT NULL,
+    record_method TEXT NOT NULL DEFAULT 'qr',
     occurred_at INTEGER NOT NULL,
     location TEXT,
     device_label TEXT,
@@ -247,6 +247,7 @@ sqlite.exec(`
 `);
 
 for (const [column, definition] of [
+  ["record_method", "TEXT NOT NULL DEFAULT 'qr'"],
   ["session_id", "TEXT"],
   ["login_at", "INTEGER"],
   ["selfie_path", "TEXT"],
@@ -255,6 +256,15 @@ for (const [column, definition] of [
     sqlite.exec(`ALTER TABLE attendance_events ADD COLUMN ${column} ${definition}`);
   }
 }
+if (!tableColumns("attendance_tokens").has("token_type")) {
+  sqlite.exec("ALTER TABLE attendance_tokens ADD COLUMN token_type TEXT NOT NULL DEFAULT 'qr'");
+}
+sqlite.exec(`
+  DROP INDEX IF EXISTS attendance_tokens_one_active_unique;
+  CREATE UNIQUE INDEX IF NOT EXISTS attendance_tokens_one_active_unique
+    ON attendance_tokens (is_active, token_type)
+    WHERE is_active = 1 AND token_type = 'qr';
+`);
 for (const [column, definition] of [
   ["employment_start_date", "TEXT NOT NULL DEFAULT '1970-01-01'"],
   ["employment_end_date", "TEXT"],

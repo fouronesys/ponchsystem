@@ -629,12 +629,12 @@ function ScheduleManager({ employees }: { employees: EmployeeRecord[] }) {
                     <div key={dayOfWeek} className="rounded-xl border p-4">
                       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <p className="font-semibold">{label}</p>
-                        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={isWorking} onChange={(event) => updateDay(dayOfWeek, event.target.checked ? { startTime: day.startTime ?? "08:00", endTime: day.endTime ?? "17:00" } : { startTime: null, endTime: null, mealStart: null, mealEnd: null })} />Laborable</label>
+                        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={isWorking} onChange={(event) => updateDay(dayOfWeek, event.target.checked ? { startTime: day.startTime ?? "08:00", endTime: day.endTime ?? "17:00" } : { startTime: null, endTime: null, mealStart: null, mealEnd: null })} />Día laborable</label>
                       </div>
                       {isWorking ? (
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                          <label className="text-sm">Entrada<Input type="time" value={day.startTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { startTime: event.target.value || null })} /></label>
-                          <label className="text-sm">Salida<Input type="time" value={day.endTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { endTime: event.target.value || null })} /></label>
+                          <label className="text-sm">Entrada<Input type="time" value={day.startTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { startTime: event.target.value || null })} /><span className="text-xs text-muted-foreground">Formato 24 h · 00:00 = 12:00 a. m.</span></label>
+                          <label className="text-sm">Salida<Input type="time" value={day.endTime ?? ""} onChange={(event) => updateDay(dayOfWeek, { endTime: event.target.value || null })} /><span className="text-xs text-muted-foreground">Formato 24 h · 12:00 = 12:00 p. m.</span></label>
                           <label className="flex items-end gap-2 pb-2 text-sm font-medium"><input type="checkbox" checked={hasMeal} onChange={(event) => updateDay(dayOfWeek, event.target.checked ? { mealStart: "12:00", mealEnd: "13:00" } : { mealStart: null, mealEnd: null })} />Tiene comida</label>
                           {hasMeal && <><label className="text-sm">Inicio comida<Input type="time" value={day.mealStart ?? ""} onChange={(event) => updateDay(dayOfWeek, { mealStart: event.target.value || null })} /></label><label className="text-sm">Fin comida<Input type="time" value={day.mealEnd ?? ""} onChange={(event) => updateDay(dayOfWeek, { mealEnd: event.target.value || null })} /></label></>}
                         </div>

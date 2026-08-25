@@ -183,7 +183,12 @@ test("los horarios semanales respetan permisos y validaciones", async () => {
       headers: { cookie: adminCookie },
       body: JSON.stringify({ days: invertedShift }),
     });
-    assert.equal(invertedShiftResult.response.status, 400);
+    assert.equal(invertedShiftResult.response.status, 200);
+    assert.deepEqual(
+      invertedShiftResult.body.days.find((day: { dayOfWeek: number }) => day.dayOfWeek === 1),
+      invertedShift[1],
+      "debe aceptar jornadas que cruzan medianoche",
+    );
 
     const outsideMeal = blankWeek();
     outsideMeal[1] = {
