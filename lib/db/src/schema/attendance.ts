@@ -146,7 +146,9 @@ export const attendanceEventsTable = sqliteTable(
       .notNull()
       .references(() => employeesTable.id, { onDelete: "restrict" }),
     type: text("type").notNull(),
-    recordMethod: text("record_method").notNull().default("qr"),
+    recordMethod: text("record_method", { enum: ["qr", "manual"] })
+      .notNull()
+      .default("qr"),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
