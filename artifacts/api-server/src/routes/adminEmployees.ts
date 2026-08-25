@@ -33,7 +33,14 @@ function optionalText(value: unknown) {
 }
 
 function isoDate(value: unknown): string | null {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+    ? value
+    : null;
 }
 
 function validDateRange(startDate: string, endDate: string | null) {
@@ -60,6 +67,30 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
     return;
   }
 
+  const employmentStartDate = "employmentStartDate" in (req.body ?? {})
+    ? isoDate(req.body.employmentStartDate)
+    : todayIsoDate();
+  const employmentEndDate = "employmentEndDate" in (req.body ?? {}) &&
+    req.body.employmentEndDate !== null &&
+    req.body.employmentEndDate !== ""
+    ? isoDate(req.body.employmentEndDate)
+    : null;
+  if (!employmentStartDate) {
+    res.status(400).json({ error: "La fecha de inicio laboral no es válida." });
+    return;
+  }
+  if ("employmentEndDate" in (req.body ?? {}) &&
+    req.body.employmentEndDate !== null &&
+    req.body.employmentEndDate !== "" &&
+    !employmentEndDate) {
+    res.status(400).json({ error: "La fecha de finalización laboral no es válida." });
+    return;
+  }
+  if (!validDateRange(employmentStartDate, employmentEndDate)) {
+    res.status(400).json({ error: "La fecha de finalización debe ser posterior o igual al inicio laboral." });
+    return;
+  }
+
   let profilePhotoPath: string | null = null;
   try {
     if (req.body?.profilePhoto) profilePhotoPath = await saveImage(req.body.profilePhoto, "profiles");
@@ -78,8 +109,8 @@ router.post("/admin/employees", requireAdministrator, async (req, res): Promise<
         profilePhotoPath,
         role: "employee",
         active: true,
-        employmentStartDate: isoDate(req.body?.employmentStartDate) ?? todayIsoDate(),
-        employmentEndDate: isoDate(req.body?.employmentEndDate),
+        employmentStartDate,
+        employmentEndDate,
       })
       .returning();
     await ensureWeeklySchedule(created.id);

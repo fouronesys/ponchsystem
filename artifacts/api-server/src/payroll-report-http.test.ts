@@ -63,8 +63,29 @@ test("los reportes de nómina exportan PDF y XML sólo para administración", as
     jobTitle: "Cajera",
     role: "employee" as const,
     active: true,
+    employmentStartDate: "2026-01-01",
   };
-  await db.insert(employeesTable).values([admin, employee]);
+  const inactiveHistoricalEmployee = {
+    id: randomUUID(),
+    username: "payroll-inactive-historical",
+    passwordHash: localAuth.hashPassword(password),
+    displayName: "Carlos Histórico",
+    role: "employee" as const,
+    active: false,
+    employmentStartDate: "2026-01-01",
+    employmentEndDate: "2026-09-15",
+  };
+  const shortEmploymentEmployee = {
+    id: randomUUID(),
+    username: "payroll-short-employment",
+    passwordHash: localAuth.hashPassword(password),
+    displayName: "Ana Periodo",
+    role: "employee" as const,
+    active: false,
+    employmentStartDate: "2026-08-26",
+    employmentEndDate: "2026-08-28",
+  };
+  await db.insert(employeesTable).values([admin, employee, inactiveHistoricalEmployee, shortEmploymentEmployee]);
   await weeklySchedule.replaceWeeklySchedule(
     employee.id,
     Array.from({ length: 7 }, (_, dayOfWeek) => ({
@@ -75,6 +96,18 @@ test("los reportes de nómina exportan PDF y XML sólo para administración", as
       mealEnd: null,
     })),
   );
+  for (const scheduledEmployee of [inactiveHistoricalEmployee, shortEmploymentEmployee]) {
+    await weeklySchedule.replaceWeeklySchedule(
+      scheduledEmployee.id,
+      Array.from({ length: 7 }, (_, dayOfWeek) => ({
+        dayOfWeek,
+        startTime: dayOfWeek >= 1 && dayOfWeek <= 5 ? "08:00" : null,
+        endTime: dayOfWeek >= 1 && dayOfWeek <= 5 ? "17:00" : null,
+        mealStart: null,
+        mealEnd: null,
+      })),
+    );
+  }
   await db.insert(attendanceEventsTable).values([
     {
       id: randomUUID(),
@@ -126,6 +159,7 @@ test("los reportes de nómina exportan PDF y XML sólo para administración", as
     const pdfBytes = Buffer.from(await pdf.arrayBuffer());
     assert.equal(pdfBytes.subarray(0, 4).toString("ascii"), "%PDF");
     assert.match(pdfBytes.toString("ascii"), /Maria Perez/);
+    assert.match(pdfBytes.toString("ascii"), /Carlos Historico/);
     assert.match(pdfBytes.toString("ascii"), /Ausencias: 1/);
 
     const xml = await fetch(`${baseUrl}${exportPath}.xml?start=2026-08-24&end=2026-08-31`, {
@@ -138,6 +172,57 @@ test("los reportes de nómina exportan PDF y XML sólo para administración", as
     assert.match(xmlBody, /displayName="María Pérez"/);
     assert.match(xmlBody, /expectedDays="2" absenceDays="1"/);
     assert.match(xmlBody, /workedMinutes="535" lateEntries="1" outsideShiftEvents="1"/);
+    assert.match(xmlBody, /displayName="Carlos Histórico"/);
+    assert.match(xmlBody, /displayName="Ana Periodo"/);
+    const anaStart = xmlBody.indexOf('displayName="Ana Periodo"');
+    const anaEnd = xmlBody.indexOf("</employee>", anaStart);
+    assert.ok(anaStart >= 0 && anaEnd > anaStart);
+    const anaXml = xmlBody.slice(anaStart, anaEnd);
+    assert.match(anaXml, /expectedDays="3" absenceDays="3"/);
+    assert.match(anaXml, /date="2026-08-24" state="day_off"/);
+    assert.match(anaXml, /date="2026-08-25" state="day_off"/);
+    assert.match(anaXml, /date="2026-08-26" state="absent"/);
+    assert.match(anaXml, /date="2026-08-28" state="absent"/);
+    assert.match(anaXml, /date="2026-08-29" state="day_off"/);
+
+    const employeesResponse = await request(baseUrl, "/api/admin/employees", {
+      headers: { cookie: adminCookie },
+    });
+    assert.equal(employeesResponse.response.status, 200);
+    const historicalFromAdmin = employeesResponse.body.find(
+      (item: { id: string }) => item.id === inactiveHistoricalEmployee.id,
+    );
+    assert.deepEqual(
+      {
+        active: historicalFromAdmin.active,
+        employmentStartDate: historicalFromAdmin.employmentStartDate,
+        employmentEndDate: historicalFromAdmin.employmentEndDate,
+      },
+      { active: false, employmentStartDate: "2026-01-01", employmentEndDate: "2026-09-15" },
+    );
+
+    const invalidEmploymentDate = await request(
+      baseUrl,
+      `/api/admin/employees/${employee.id}`,
+      {
+        method: "PUT",
+        headers: { cookie: adminCookie },
+        body: JSON.stringify({ employmentStartDate: "2026-02-30" }),
+      },
+    );
+    assert.equal(invalidEmploymentDate.response.status, 400);
+
+    const updatedDates = await request(baseUrl, `/api/admin/employees/${employee.id}`, {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({
+        employmentStartDate: "2026-02-01",
+        employmentEndDate: "2026-08-31",
+      }),
+    });
+    assert.equal(updatedDates.response.status, 200);
+    assert.equal(updatedDates.body.employmentStartDate, "2026-02-01");
+    assert.equal(updatedDates.body.employmentEndDate, "2026-08-31");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await fs.rm(path.dirname(databasePath), { recursive: true, force: true });
