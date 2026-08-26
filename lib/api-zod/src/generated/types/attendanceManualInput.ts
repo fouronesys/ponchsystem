@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AttendanceLocation } from './attendanceLocation';
 
 export interface AttendanceManualInput {
   /**
@@ -12,4 +13,5 @@ export interface AttendanceManualInput {
      * @minLength 100
      */
   selfie: string;
+  location: AttendanceLocation;
 }

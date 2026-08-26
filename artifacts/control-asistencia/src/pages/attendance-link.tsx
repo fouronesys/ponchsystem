@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SelfieCapture } from "@/components/selfie-capture";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
+import { getCurrentAttendanceLocation, locationPrecisionLabel, type AttendanceLocation } from "@/lib/location";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -26,21 +27,29 @@ export default function AttendanceLinkPage({ token }: { token: string }) {
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<"check_in" | "check_out" | null>(null);
   const [error, setError] = useState("");
+  const [location, setLocation] = useState<AttendanceLocation | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const submit = async () => {
     if (!selfie || pending) return;
     setPending(true);
+    setLocating(true);
     setError("");
     try {
+      const currentLocation = await getCurrentAttendanceLocation();
+      setLocation(currentLocation);
+      setLocating(false);
       const event = await apiFetch<{ type: "check_in" | "check_out" }>("/attendance/scan", {
         method: "POST",
-        body: JSON.stringify({ token, selfie }),
+        body: JSON.stringify({ token, selfie, location: currentLocation }),
       });
       setSuccess(event.type);
       setSelfie(null);
+      setLocation(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No pudimos registrar tu asistencia.");
     } finally {
+      setLocating(false);
       setPending(false);
     }
   };
@@ -124,10 +133,11 @@ export default function AttendanceLinkPage({ token }: { token: string }) {
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={() => void submit()} disabled={pending}>
                   {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {pending ? "Registrando…" : `Confirmar ${action}`}
+                  {locating ? "Comprobando ubicación…" : pending ? "Registrando…" : `Confirmar ${action}`}
                 </Button>
                 <Button variant="outline" onClick={() => setSelfie(null)} disabled={pending}>Repetir</Button>
               </div>
+              {location && !locating && <p className="text-center text-xs text-muted-foreground">{locationPrecisionLabel(location.accuracy)}</p>}
             </>
           )}
           {error && (

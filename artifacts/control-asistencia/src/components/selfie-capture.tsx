@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, RefreshCw, X } from "lucide-react";
+import { Camera, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  attachStreamAndWaitForFrames,
+  CameraPreparationError,
+  stopMediaStream,
+  waitForMountedVideo,
+} from "@/lib/camera";
 
 type SelfieCaptureProps = {
   disabled?: boolean;
@@ -10,11 +16,14 @@ type SelfieCaptureProps = {
 export function SelfieCapture({ disabled, onCaptured }: SelfieCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const generationRef = useRef(0);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cameraState, setCameraState] = useState<"starting" | "ready">("starting");
 
   const stop = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    generationRef.current += 1;
+    stopMediaStream(streamRef.current, videoRef.current);
     streamRef.current = null;
     setOpen(false);
   };
@@ -23,27 +32,57 @@ export function SelfieCapture({ disabled, onCaptured }: SelfieCaptureProps) {
 
   const start = async () => {
     setError(null);
+    setCameraState("starting");
+    setOpen(true);
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setOpen(true);
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Este navegador no admite la cámara.");
+      }
+
+      let lastError: unknown;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        if (generationRef.current !== generation) {
+          stopMediaStream(stream, null);
+          return;
         }
-      });
-    } catch {
-      setError("Debes permitir el uso de la cámara frontal para continuar.");
+        streamRef.current = stream;
+        try {
+          const video = await waitForMountedVideo(videoRef);
+          await attachStreamAndWaitForFrames(video, stream);
+          if (generationRef.current !== generation) {
+            stopMediaStream(stream, video);
+            return;
+          }
+          setCameraState("ready");
+          return;
+        } catch (reason) {
+          lastError = reason;
+          stopMediaStream(stream, videoRef.current);
+          streamRef.current = null;
+        }
+      }
+      throw lastError instanceof Error
+        ? lastError
+        : new CameraPreparationError();
+    } catch (reason) {
+      stop();
+      setError(
+        reason instanceof Error && reason.message.includes("no admite")
+          ? reason.message
+          : "Debes permitir el uso de la cámara frontal para continuar.",
+      );
     }
   };
 
   const capture = () => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
+    if (!video || !video.videoWidth || cameraState !== "ready") return;
     const side = Math.min(video.videoWidth, video.videoHeight);
     const canvas = document.createElement("canvas");
     canvas.width = 640;
@@ -77,7 +116,10 @@ export function SelfieCapture({ disabled, onCaptured }: SelfieCaptureProps) {
           </Button>
         </div>
         <div className="flex gap-2 p-3">
-          <Button type="button" className="flex-1" onClick={capture}><Camera className="mr-2 h-4 w-4" />Tomar selfie</Button>
+           <Button type="button" className="flex-1" onClick={capture} disabled={cameraState !== "ready"}>
+             {cameraState === "starting" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+             {cameraState === "starting" ? "Preparando cámara…" : "Tomar selfie"}
+           </Button>
           <Button type="button" variant="outline" onClick={stop}>Cancelar</Button>
         </div>
       </div>

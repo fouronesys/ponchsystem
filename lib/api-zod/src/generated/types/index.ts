@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './attendanceError';
+export * from './attendanceErrorCode';
 export * from './attendanceEvent';
 export * from './attendanceEventType';
+export * from './attendanceLocation';
 export * from './attendanceManualInput';
 export * from './attendanceScanInput';
 export * from './attendanceStatus';

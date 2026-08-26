@@ -9,6 +9,27 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * Location captured at the moment of attendance registration.
+ */
+export interface AttendanceLocation {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  /**
+     * Estimated horizontal accuracy in meters.
+     * @minimum 0
+     */
+  accuracy: number;
+}
+
 export interface AttendanceScanInput {
   /**
      * @minLength 16
@@ -20,6 +41,7 @@ export interface AttendanceScanInput {
      * @minLength 100
      */
   selfie: string;
+  location: AttendanceLocation;
 }
 
 export interface AttendanceManualInput {
@@ -28,6 +50,22 @@ export interface AttendanceManualInput {
      * @minLength 100
      */
   selfie: string;
+  location: AttendanceLocation;
+}
+
+export type AttendanceErrorCode = typeof AttendanceErrorCode[keyof typeof AttendanceErrorCode];
+
+
+export const AttendanceErrorCode = {
+  LOCATION_REQUIRED: 'LOCATION_REQUIRED',
+  LOCATION_INVALID: 'LOCATION_INVALID',
+  LOCATION_INACCURATE: 'LOCATION_INACCURATE',
+  OUTSIDE_ATTENDANCE_RADIUS: 'OUTSIDE_ATTENDANCE_RADIUS',
+} as const;
+
+export interface AttendanceError {
+  code?: AttendanceErrorCode;
+  error: string;
 }
 
 export type AttendanceEventType = typeof AttendanceEventType[keyof typeof AttendanceEventType];

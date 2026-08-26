@@ -44,6 +44,11 @@ const employee = {
 const validPng =
   "data:image/png;base64," +
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+const validLocation = {
+  latitude: 19.44739,
+  longitude: -70.677598,
+  accuracy: 10,
+};
 
 function cookieFrom(response: Response): string {
   const cookie = response.headers.get("set-cookie");
@@ -104,6 +109,23 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
     assert.equal(linkResponse.response.status, 201);
     const accessToken = linkResponse.body.accessToken as string;
 
+    const outsideLocation = {
+      latitude: validLocation.latitude + 0.003,
+      longitude: validLocation.longitude,
+      accuracy: validLocation.accuracy,
+    };
+    const rejectedLocation = await jsonRequest(baseUrl, "/api/attendance/scan", {
+      method: "POST",
+      headers: { cookie, "x-forwarded-for": "203.0.113.9" },
+      body: JSON.stringify({
+        token: rawToken,
+        selfie: validPng,
+        location: outsideLocation,
+      }),
+    });
+    assert.equal(rejectedLocation.response.status, 400);
+    assert.equal(rejectedLocation.body.code, "OUTSIDE_ATTENDANCE_RADIUS");
+
     const cleanupTime = new Date();
     const expiredAt = new Date(cleanupTime.getTime() - 1_000);
     await db.insert(attendanceTokensTable).values(
@@ -127,10 +149,15 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
     const scan = jsonRequest(baseUrl, "/api/attendance/scan", {
       method: "POST",
       headers: { cookie, "x-forwarded-for": "203.0.113.10" },
-      body: JSON.stringify({ token: rawToken, selfie: validPng }),
+      body: JSON.stringify({ token: rawToken, selfie: validPng, location: validLocation }),
     });
     const { response: scanResponse } = await scan;
     assert.equal(scanResponse.status, 200, "el escaneo válido debe aceptarse durante la limpieza");
+    assert.deepEqual(JSON.parse((await scan).body.location), {
+      latitude: validLocation.latitude,
+      longitude: validLocation.longitude,
+      accuracy: validLocation.accuracy,
+    });
 
     const rotate = jsonRequest(baseUrl, "/api/admin/qr/rotate", {
       method: "POST",
@@ -148,7 +175,7 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
     const duplicate = await jsonRequest(baseUrl, "/api/attendance/scan", {
       method: "POST",
       headers: { cookie, "x-forwarded-for": "203.0.113.11" },
-      body: JSON.stringify({ token: rawToken, selfie: validPng }),
+      body: JSON.stringify({ token: rawToken, selfie: validPng, location: validLocation }),
     });
     assert.equal(duplicate.response.status, 400, "un token consumido no debe aceptarse otra vez");
 
@@ -160,7 +187,7 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
     const manualCheckout = await jsonRequest(baseUrl, "/api/attendance/manual", {
       method: "POST",
       headers: { cookie },
-      body: JSON.stringify({ selfie: validPng }),
+      body: JSON.stringify({ selfie: validPng, location: validLocation }),
     });
     assert.equal(manualCheckout.response.status, 200, `el empleado debe poder registrar su salida sin QR: ${JSON.stringify(manualCheckout.body)}`);
     assert.equal(manualCheckout.body.type, "check_out");
@@ -168,7 +195,7 @@ test("el flujo HTTP de asistencia sobrevive limpieza, escaneo y rotación QR con
     const duplicateManual = await jsonRequest(baseUrl, "/api/attendance/manual", {
       method: "POST",
       headers: { cookie },
-      body: JSON.stringify({ selfie: validPng }),
+      body: JSON.stringify({ selfie: validPng, location: validLocation }),
     });
     assert.equal(duplicateManual.response.status, 400, "un doble envío manual inmediato no debe alternar otra vez el estado");
     assert.equal(

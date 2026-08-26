@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AttendanceError,
   AttendanceEvent,
   AttendanceManualInput,
   AttendanceScanInput,
@@ -470,7 +471,7 @@ export const scanAttendanceQr = async (attendanceScanInput: AttendanceScanInput,
 
 
 
-export const getScanAttendanceQrMutationOptions = <TError = ErrorType<void>,
+export const getScanAttendanceQrMutationOptions = <TError = ErrorType<AttendanceError | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanAttendanceQr>>, TError,{data: BodyType<AttendanceScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof scanAttendanceQr>>, TError,{data: BodyType<AttendanceScanInput>}, TContext> => {
 
@@ -499,12 +500,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ScanAttendanceQrMutationResult = NonNullable<Awaited<ReturnType<typeof scanAttendanceQr>>>
     export type ScanAttendanceQrMutationBody = BodyType<AttendanceScanInput>
-    export type ScanAttendanceQrMutationError = ErrorType<void>
+    export type ScanAttendanceQrMutationError = ErrorType<AttendanceError | void>
 
     /**
  * @summary Consume a rotating QR token and record attendance
  */
-export const useScanAttendanceQr = <TError = ErrorType<void>,
+export const useScanAttendanceQr = <TError = ErrorType<AttendanceError | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanAttendanceQr>>, TError,{data: BodyType<AttendanceScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof scanAttendanceQr>>,
@@ -541,7 +542,7 @@ export const recordManualAttendance = async (attendanceManualInput: AttendanceMa
 
 
 
-export const getRecordManualAttendanceMutationOptions = <TError = ErrorType<void>,
+export const getRecordManualAttendanceMutationOptions = <TError = ErrorType<AttendanceError | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext> => {
 
@@ -570,12 +571,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RecordManualAttendanceMutationResult = NonNullable<Awaited<ReturnType<typeof recordManualAttendance>>>
     export type RecordManualAttendanceMutationBody = BodyType<AttendanceManualInput>
-    export type RecordManualAttendanceMutationError = ErrorType<void>
+    export type RecordManualAttendanceMutationError = ErrorType<AttendanceError | void>
 
     /**
  * @summary Record attendance for the authenticated employee without a QR
  */
-export const useRecordManualAttendance = <TError = ErrorType<void>,
+export const useRecordManualAttendance = <TError = ErrorType<AttendanceError | void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordManualAttendance>>, TError,{data: BodyType<AttendanceManualInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof recordManualAttendance>>,

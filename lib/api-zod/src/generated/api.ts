@@ -89,11 +89,24 @@ export const scanAttendanceQrBodyTokenMax = 512;
 
 export const scanAttendanceQrBodySelfieMin = 100;
 
+export const scanAttendanceQrBodyLocationLatitudeMin = -90;
+export const scanAttendanceQrBodyLocationLatitudeMax = 90;
+
+export const scanAttendanceQrBodyLocationLongitudeMin = -180;
+export const scanAttendanceQrBodyLocationLongitudeMax = 180;
+
+export const scanAttendanceQrBodyLocationAccuracyMin = 0;
+
 
 
 export const ScanAttendanceQrBody = zod.object({
   "token": zod.string().min(scanAttendanceQrBodyTokenMin).max(scanAttendanceQrBodyTokenMax),
-  "selfie": zod.string().min(scanAttendanceQrBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.')
+  "selfie": zod.string().min(scanAttendanceQrBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.'),
+  "location": zod.object({
+  "latitude": zod.number().min(scanAttendanceQrBodyLocationLatitudeMin).max(scanAttendanceQrBodyLocationLatitudeMax),
+  "longitude": zod.number().min(scanAttendanceQrBodyLocationLongitudeMin).max(scanAttendanceQrBodyLocationLongitudeMax),
+  "accuracy": zod.number().min(scanAttendanceQrBodyLocationAccuracyMin).describe('Estimated horizontal accuracy in meters.')
+}).describe('Location captured at the moment of attendance registration.')
 })
 
 export const ScanAttendanceQrResponse = zod.object({
@@ -116,10 +129,23 @@ export const ScanAttendanceQrResponse = zod.object({
  */
 export const recordManualAttendanceBodySelfieMin = 100;
 
+export const recordManualAttendanceBodyLocationLatitudeMin = -90;
+export const recordManualAttendanceBodyLocationLatitudeMax = 90;
+
+export const recordManualAttendanceBodyLocationLongitudeMin = -180;
+export const recordManualAttendanceBodyLocationLongitudeMax = 180;
+
+export const recordManualAttendanceBodyLocationAccuracyMin = 0;
+
 
 
 export const RecordManualAttendanceBody = zod.object({
-  "selfie": zod.string().min(recordManualAttendanceBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.')
+  "selfie": zod.string().min(recordManualAttendanceBodySelfieMin).describe('Front-camera image as a JPG, PNG, or WebP data URL.'),
+  "location": zod.object({
+  "latitude": zod.number().min(recordManualAttendanceBodyLocationLatitudeMin).max(recordManualAttendanceBodyLocationLatitudeMax),
+  "longitude": zod.number().min(recordManualAttendanceBodyLocationLongitudeMin).max(recordManualAttendanceBodyLocationLongitudeMax),
+  "accuracy": zod.number().min(recordManualAttendanceBodyLocationAccuracyMin).describe('Estimated horizontal accuracy in meters.')
+}).describe('Location captured at the moment of attendance registration.')
 })
 
 export const RecordManualAttendanceResponse = zod.object({

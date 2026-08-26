@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { SelfieCapture } from "@/components/selfie-capture";
+import { getCurrentAttendanceLocation, locationPrecisionLabel, type AttendanceLocation } from "@/lib/location";
 import { QrCode, LogIn, LogOut, CheckCircle2, Clock, AlertCircle, Camera, Loader2 } from "lucide-react";
 
 export default function EmployeePage() {
@@ -15,6 +16,8 @@ export default function EmployeePage() {
   const [manualSelfie, setManualSelfie] = useState<string | null>(null);
   const [manualError, setManualError] = useState<string | null>(null);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+  const [manualLocation, setManualLocation] = useState<AttendanceLocation | null>(null);
+  const [isLocatingManual, setIsLocatingManual] = useState(false);
 
   if (isLoading) {
     return <div className="mx-auto max-w-md"><Card><CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader><CardContent><Skeleton className="h-32 w-full" /></CardContent></Card></div>;
@@ -30,17 +33,23 @@ export default function EmployeePage() {
   const submitManualAttendance = async () => {
     if (!manualSelfie) return;
     setManualError(null);
-    setIsSubmittingManual(true);
+    setIsLocatingManual(true);
     try {
+      const location = await getCurrentAttendanceLocation();
+      setManualLocation(location);
+      setIsLocatingManual(false);
+      setIsSubmittingManual(true);
       await apiFetch("/attendance/manual", {
         method: "POST",
-        body: JSON.stringify({ selfie: manualSelfie }),
+        body: JSON.stringify({ selfie: manualSelfie, location }),
       });
       setManualSelfie(null);
+      setManualLocation(null);
       await refetch();
     } catch (error) {
       setManualError(error instanceof Error ? error.message : "No pudimos registrar la asistencia.");
     } finally {
+      setIsLocatingManual(false);
       setIsSubmittingManual(false);
     }
   };
@@ -107,11 +116,12 @@ export default function EmployeePage() {
              ) : (
                <div className="space-y-3">
                  <img src={manualSelfie} alt="Vista previa de selfie" className="mx-auto aspect-square w-48 rounded-xl object-cover" />
-                 <Button className="w-full" onClick={() => void submitManualAttendance()} disabled={isSubmittingManual}>
-                   {isSubmittingManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                   {isSubmittingManual ? "Registrando..." : `Confirmar ${isCheckedIn ? "salida" : "entrada"}`}
+                  <Button className="w-full" onClick={() => void submitManualAttendance()} disabled={isSubmittingManual || isLocatingManual}>
+                    {isSubmittingManual || isLocatingManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                    {isLocatingManual ? "Comprobando ubicación…" : isSubmittingManual ? "Registrando..." : `Confirmar ${isCheckedIn ? "salida" : "entrada"}`}
                  </Button>
                  <Button variant="outline" className="w-full" onClick={() => setManualSelfie(null)} disabled={isSubmittingManual}>Tomar otra selfie</Button>
+                  {manualLocation && !isLocatingManual && <p className="text-center text-xs text-muted-foreground">{locationPrecisionLabel(manualLocation.accuracy)}</p>}
                </div>
              )}
              {manualError && <p className="text-sm text-destructive">{manualError}</p>}

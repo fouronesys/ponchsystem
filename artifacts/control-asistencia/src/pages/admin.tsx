@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime, formatDateTime } from "@/lib/utils";
-import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone, Download, FileCode2, FileText } from "lucide-react";
+import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone, MapPin, Download, FileCode2, FileText } from "lucide-react";
 import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
 import { apiFetch, imageToDataUrl } from "@/lib/api";
 import type { WeeklySchedule, WeeklyScheduleDay } from "@workspace/api-client-react";
@@ -186,6 +186,7 @@ export default function AdminPage() {
                     <TableHead>Evento</TableHead>
                     <TableHead>Hora / puntualidad</TableHead>
                     <TableHead className="hidden sm:table-cell">Dispositivo</TableHead>
+                    <TableHead className="hidden md:table-cell">Ubicación</TableHead>
                     <TableHead>Evidencia</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -213,6 +214,9 @@ export default function AdminPage() {
                           <MonitorSmartphone className="w-3.5 h-3.5" />
                           <span className="truncate max-w-[120px]">{event.deviceLabel || 'App'}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
+                        <LocationEvidence value={event.location} />
                       </TableCell>
                       <TableCell>
                         {event.selfieUrl ? (
@@ -311,6 +315,36 @@ function TimingBadge({ status, scheduledTime }: { status: string; scheduledTime:
     day_off: "secondary",
   };
   return <Badge variant={variants[status] ?? "secondary"} className="mt-1 text-[10px]">{labels[status] ?? status}{scheduledTime ? ` · ${scheduledTime}` : ""}</Badge>;
+}
+
+function LocationEvidence({ value }: { value: string | null }) {
+  if (!value) return <span>Sin ubicación</span>;
+  try {
+    const evidence = JSON.parse(value) as {
+      latitude?: unknown;
+      longitude?: unknown;
+      accuracy?: unknown;
+    };
+    if (
+      typeof evidence.latitude !== "number" ||
+      typeof evidence.longitude !== "number" ||
+      typeof evidence.accuracy !== "number"
+    ) {
+      return <span>Registrada</span>;
+    }
+    return (
+      <div className="flex items-start gap-1.5">
+        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          {evidence.latitude.toFixed(5)}, {evidence.longitude.toFixed(5)}
+          <br />
+          ±{Math.max(1, Math.round(evidence.accuracy))} m
+        </span>
+      </div>
+    );
+  } catch {
+    return <span>Registrada</span>;
+  }
 }
 
 type EmployeeRecord = {

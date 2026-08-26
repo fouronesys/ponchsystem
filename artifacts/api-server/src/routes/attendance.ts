@@ -7,6 +7,7 @@ import {
   GetTodayAttendanceResponse,
   ListAttendanceEventsQueryParams,
   ListAttendanceEventsResponse,
+  RecordManualAttendanceBody,
   RotateQrTokenResponse,
   ScanAttendanceQrBody,
   ScanAttendanceQrResponse,
@@ -44,6 +45,12 @@ import {
 } from "../lib/qrSecurity";
 import { removeImage, saveImage } from "../lib/imageStorage";
 import { logger } from "../lib/logger";
+import {
+  AttendanceLocationError,
+  serializeLocationEvidence,
+  validateAttendanceLocation,
+  type ValidatedAttendanceLocation,
+} from "../lib/attendanceLocation";
 import {
   buildPayrollAttendanceReport,
   parsePayrollReportRange,
@@ -267,6 +274,7 @@ async function recordAttendanceWithToken(
   rawToken: string,
   selfie: string,
   tokenType: "qr" | "manual",
+  location: ValidatedAttendanceLocation,
 ) {
     const clientIp = req.ip || req.socket.remoteAddress || "unknown";
     const employee = req.employee!;
@@ -331,7 +339,7 @@ async function recordAttendanceWithToken(
             type: todayLatest?.type === "check_in" || previousOpenEvent ? "check_out" : "check_in",
             recordMethod: tokenType,
             occurredAt: now,
-            location: null,
+            location: serializeLocationEvidence(location),
             deviceLabel: req.get("user-agent")?.slice(0, 180) ?? null,
             sessionId: req.session?.id ?? null,
             loginAt: req.session?.loginAt ?? null,
@@ -366,8 +374,43 @@ router.post(
   async (req: AuthenticatedRequest, res): Promise<void> => {
     const parsed = ScanAttendanceQrBody.safeParse(req.body);
     if (!parsed.success) {
+      if (
+        req.body &&
+        typeof req.body === "object" &&
+        typeof req.body.token === "string" &&
+        typeof req.body.selfie === "string" &&
+        req.body.token.length >= 16 &&
+        req.body.selfie.length >= 100
+      ) {
+        if (!("location" in req.body) || req.body.location == null) {
+          res.status(400).json({
+            code: "LOCATION_REQUIRED",
+            error: "Necesitamos tu ubicación para registrar la asistencia.",
+          });
+          return;
+        }
+        try {
+          validateAttendanceLocation(req.body.location);
+        } catch (error) {
+          if (error instanceof AttendanceLocationError) {
+            res.status(400).json({ code: error.code, error: error.message });
+            return;
+          }
+          throw error;
+        }
+      }
       res.status(400).json({ error: "Código QR inválido" });
       return;
+    }
+    let location: ValidatedAttendanceLocation;
+    try {
+      location = validateAttendanceLocation(parsed.data.location);
+    } catch (error) {
+      if (error instanceof AttendanceLocationError) {
+        res.status(400).json({ code: error.code, error: error.message });
+        return;
+      }
+      throw error;
     }
 
     const clientIp = req.ip || req.socket.remoteAddress || "unknown";
@@ -379,7 +422,13 @@ router.post(
     }
 
     try {
-      const result = await recordAttendanceWithToken(req, parsed.data.token, parsed.data.selfie, "qr");
+      const result = await recordAttendanceWithToken(
+        req,
+        parsed.data.token,
+        parsed.data.selfie,
+        "qr",
+        location,
+      );
       if (!result) {
         req.log.warn({ employeeId: req.employee!.id }, "QR token rejected");
         res.status(400).json({ error: "El QR expiró, ya fue utilizado o no es válido." });
@@ -396,10 +445,22 @@ router.post(
   "/attendance/manual",
   requireAuthenticated,
   async (req: AuthenticatedRequest, res): Promise<void> => {
-    const parsed = ScanAttendanceQrBody.shape.selfie.safeParse(req.body?.selfie);
-    if (!parsed.success) {
+    const selfieParsed = RecordManualAttendanceBody.shape.selfie.safeParse(
+      req.body?.selfie,
+    );
+    if (!selfieParsed.success) {
       res.status(400).json({ error: "La selfie es obligatoria." });
       return;
+    }
+    let location: ValidatedAttendanceLocation;
+    try {
+      location = validateAttendanceLocation(req.body?.location);
+    } catch (error) {
+      if (error instanceof AttendanceLocationError) {
+        res.status(400).json({ code: error.code, error: error.message });
+        return;
+      }
+      throw error;
     }
 
     const clientIp = req.ip || req.socket.remoteAddress || "unknown";
@@ -412,7 +473,13 @@ router.post(
 
     try {
       const manualToken = issueManualToken();
-      const result = await recordAttendanceWithToken(req, manualToken, parsed.data, "manual");
+      const result = await recordAttendanceWithToken(
+        req,
+        manualToken,
+        selfieParsed.data,
+        "manual",
+        location,
+      );
       if (!result) {
         res.status(400).json({ error: "El registro manual expiró o ya fue utilizado." });
         return;
