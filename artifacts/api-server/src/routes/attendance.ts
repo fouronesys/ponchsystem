@@ -99,6 +99,16 @@ function bogotaDay(value: Date): string {
   return `${piece("year")}-${piece("month")}-${piece("day")}`;
 }
 
+export function hasPreviousOpenAttendance(
+  events: ReadonlyArray<{ type: "check_in" | "check_out"; occurredAt: Date }>,
+  now: Date,
+): boolean {
+  const latest = events[0];
+  if (!latest || latest.type !== "check_in") return false;
+  const age = now.getTime() - latest.occurredAt.getTime();
+  return age >= 0 && age <= 18 * 60 * 60 * 1000;
+}
+
 function eventResponse(
   event: typeof attendanceEventsTable.$inferSelect,
   employee: Employee,
@@ -326,11 +336,9 @@ async function recordAttendanceWithToken(
         ) {
           return null;
         }
-        const previousOpenEvent = !todayLatest && events.find((item) => (
-          item.type === "check_in" &&
-          now.getTime() - item.occurredAt.getTime() <= 18 * 60 * 60 * 1000 &&
-          scheduleDayForDate(schedule.days, item.occurredAt)?.endTime !== null
-        ));
+        const previousOpenEvent = !todayLatest &&
+          hasPreviousOpenAttendance(events, now) &&
+          scheduleDayForDate(schedule.days, events[0]!.occurredAt)?.endTime !== null;
         const created = tx
           .insert(attendanceEventsTable)
           .values({

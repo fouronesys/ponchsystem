@@ -16,10 +16,11 @@ process.env.SQLITE_DATABASE_PATH = databasePath;
 process.env.SESSION_SECRET = "weekly-schedule-http-test-secret";
 process.env.NODE_ENV = "test";
 
-const [{ default: app }, dbModule, localAuth] = await Promise.all([
+const [{ default: app }, dbModule, localAuth, attendanceRoutes] = await Promise.all([
   import("./app"),
   import("@workspace/db"),
   import("./lib/localAuth"),
+  import("./routes/attendance"),
 ]);
 
 const { db, employeesTable, weeklySchedulesTable } = dbModule;
@@ -61,6 +62,27 @@ function blankWeek(): Array<{
 }
 
 test("los horarios semanales respetan permisos y validaciones", async () => {
+  const referenceNow = new Date("2026-08-26T14:00:00.000Z");
+  assert.equal(
+    attendanceRoutes.hasPreviousOpenAttendance(
+      [
+        { type: "check_out", occurredAt: new Date("2026-08-26T12:30:00.000Z") },
+        { type: "check_in", occurredAt: new Date("2026-08-26T11:00:00.000Z") },
+      ],
+      referenceNow,
+    ),
+    false,
+    "una salida previa debe permitir que la próxima marcación sea una entrada",
+  );
+  assert.equal(
+    attendanceRoutes.hasPreviousOpenAttendance(
+      [{ type: "check_in", occurredAt: new Date("2026-08-26T11:00:00.000Z") }],
+      referenceNow,
+    ),
+    true,
+    "una entrada reciente sin salida debe poder cerrarse al cruzar medianoche",
+  );
+
   const password = "weekly-schedule-test-password";
   const admin = {
     id: randomUUID(),
