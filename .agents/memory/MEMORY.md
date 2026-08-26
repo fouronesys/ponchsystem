@@ -3,3 +3,4 @@
 - [HTTP concurrency testing](http-concurrency-testing.md) — coordinate credential-invalidating requests explicitly; native fetch start order is not a processing-order guarantee.
 - [SQLite transaction callbacks](sqlite-transaction-callbacks.md) — Better SQLite transactions must be synchronous; execute statements with `run()` inside the callback.
 - [OpenAPI nullable unions](openapi-nullable-unions.md) — use oneOf with a null schema for nullable refs; Orval otherwise may generate an impossible enum intersection.
+- [GitHub branch protection checks](github-branch-protection-checks.md) — the protection API accepts either legacy contexts or modern checks, not both together.
