@@ -611,7 +611,8 @@ function EmployeeEditor({
           <label className="text-sm font-medium">Correo<Input type="email" value={values.email} onChange={(event) => setValue("email", event.target.value)} className="mt-1" /></label>
           <label className="text-sm font-medium">Teléfono<Input value={values.phone} onChange={(event) => setValue("phone", event.target.value)} className="mt-1" /></label>
           <label className="text-sm font-medium">Cargo<Input value={values.jobTitle} onChange={(event) => setValue("jobTitle", event.target.value)} className="mt-1" /></label>
-          <label className="text-sm font-medium">Departamento<Input value={values.department} onChange={(event) => setValue("department", event.target.value)} list="department-options" className="mt-1" /></label>
+          <label className="text-sm font-medium">Departamento<Input value={values.department} onChange={(event) => setValue("department", event.target.value)} list="edit-department-options" className="mt-1" /></label>
+          <datalist id="edit-department-options">{departments.map((department) => <option key={department} value={department} />)}</datalist>
           <label className="text-sm font-medium">Inicio laboral<Input required type="date" value={values.employmentStartDate} onChange={(event) => setValue("employmentStartDate", event.target.value)} className="mt-1" /></label>
           <label className="text-sm font-medium">Fin laboral (opcional)<Input type="date" value={values.employmentEndDate} onChange={(event) => setValue("employmentEndDate", event.target.value)} className="mt-1" /></label>
           <label className="text-sm font-medium">Nueva foto de perfil (opcional)
