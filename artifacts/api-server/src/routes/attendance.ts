@@ -100,7 +100,7 @@ function bogotaDay(value: Date): string {
 }
 
 export function hasPreviousOpenAttendance(
-  events: ReadonlyArray<{ type: "check_in" | "check_out"; occurredAt: Date }>,
+  events: ReadonlyArray<{ type: string; occurredAt: Date }>,
   now: Date,
 ): boolean {
   const latest = events[0];
