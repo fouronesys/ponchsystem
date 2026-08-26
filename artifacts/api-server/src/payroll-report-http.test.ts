@@ -223,6 +223,33 @@ test("los reportes de nómina exportan PDF y XML sólo para administración", as
     assert.equal(updatedDates.response.status, 200);
     assert.equal(updatedDates.body.employmentStartDate, "2026-02-01");
     assert.equal(updatedDates.body.employmentEndDate, "2026-08-31");
+
+    const updatedAccount = await request(baseUrl, `/api/admin/employees/${employee.id}`, {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({
+        username: "payroll-employee-renamed",
+        displayName: "María Actualizada",
+        password: "payroll-new-password",
+      }),
+    });
+    assert.equal(updatedAccount.response.status, 200);
+    assert.equal(updatedAccount.body.username, "payroll-employee-renamed");
+    assert.equal(updatedAccount.body.displayName, "María Actualizada");
+
+    const duplicateUsername = await request(baseUrl, `/api/admin/employees/${employee.id}`, {
+      method: "PUT",
+      headers: { cookie: adminCookie },
+      body: JSON.stringify({ username: admin.username }),
+    });
+    assert.equal(duplicateUsername.response.status, 409);
+
+    const oldCredentials = await request(baseUrl, "/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username: employee.username, password }),
+    });
+    assert.equal(oldCredentials.response.status, 401);
+    await login(baseUrl, "payroll-employee-renamed", "payroll-new-password");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await fs.rm(path.dirname(databasePath), { recursive: true, force: true });
