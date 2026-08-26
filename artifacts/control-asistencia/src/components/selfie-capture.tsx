@@ -80,6 +80,10 @@ export function SelfieCapture({ disabled, onCaptured }: SelfieCaptureProps) {
     }
   };
 
+  useEffect(() => {
+    if (!disabled) void start();
+  }, [disabled]);
+
   const capture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || cameraState !== "ready") return;
@@ -129,9 +133,9 @@ export function SelfieCapture({ disabled, onCaptured }: SelfieCaptureProps) {
   return (
     <div className="space-y-2">
       <Button type="button" onClick={() => void start()} disabled={disabled} className="w-full">
-        <Camera className="mr-2 h-4 w-4" />Tomar selfie obligatoria
+        <Camera className="mr-2 h-4 w-4" />{error ? "Solicitar permiso y abrir cámara" : "Tomar selfie obligatoria"}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
     </div>
   );
 }
