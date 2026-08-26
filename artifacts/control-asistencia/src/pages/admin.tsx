@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatTime, formatDateTime } from "@/lib/utils";
 import { Users, UserCheck, Clock, UserMinus, RotateCw, Link2, Copy, ExternalLink, ShieldOff, LogIn, LogOut, MonitorSmartphone, MapPin, Download, FileCode2, FileText } from "lucide-react";
-import { Camera, UserPlus, UserRound, UserRoundX } from "lucide-react";
+import { Camera, Pencil, Save, UserPlus, UserRound, UserRoundX, X } from "lucide-react";
 import { apiFetch, imageToDataUrl } from "@/lib/api";
 import type { WeeklySchedule, WeeklyScheduleDay } from "@workspace/api-client-react";
 
@@ -370,6 +370,7 @@ function EmployeeManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeRecord | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -447,6 +448,10 @@ function EmployeeManager() {
   const visibleEmployees = departmentFilter === "all"
     ? employees
     : employees.filter((employee) => employee.department === departmentFilter);
+  const saveEditedEmployee = (updated: EmployeeRecord) => {
+    setEmployees((current) => current.map((item) => item.id === updated.id ? updated : item));
+    setEditingEmployee(null);
+  };
 
   return (
     <section className="space-y-5">
@@ -472,6 +477,14 @@ function EmployeeManager() {
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
+      {editingEmployee && editingEmployee.role !== "admin" && (
+        <EmployeeEditor
+          employee={editingEmployee}
+          departments={departments}
+          onCancel={() => setEditingEmployee(null)}
+          onSaved={saveEditedEmployee}
+        />
+      )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Directorio de empleados</CardTitle><CardDescription>Desactivar una cuenta impide nuevos accesos sin eliminar su historial.</CardDescription></div><Button variant="outline" size="sm" onClick={() => void refresh()}><RotateCw className="mr-2 h-4 w-4" />Actualizar</Button></CardHeader>
         <CardContent>
@@ -483,12 +496,15 @@ function EmployeeManager() {
                    {departments.map((department) => <option key={department} value={department}>{department}</option>)}
                  </select>
                </label>
-               {visibleEmployees.length === 0 ? <p className="py-5 text-center text-sm text-muted-foreground">No hay empleados en este departamento.</p> : visibleEmployees.map((employee) => <div key={employee.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
+                {visibleEmployees.length === 0 ? <p className="py-5 text-center text-sm text-muted-foreground">No hay empleados en este departamento.</p> : visibleEmployees.map((employee) => <div key={employee.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
                 {employee.profilePhotoUrl ? <img src={employee.profilePhotoUrl} alt={`Foto de ${employee.displayName}`} className="h-11 w-11 rounded-full object-cover" /> : <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary"><UserRound className="h-5 w-5 text-muted-foreground" /></div>}
                  <div className="min-w-[160px] flex-1"><p className="font-medium">{employee.displayName}</p><p className="text-xs text-muted-foreground">@{employee.username}{employee.jobTitle ? ` · ${employee.jobTitle}` : ""}</p></div>
                  <Input defaultValue={employee.department ?? ""} placeholder="Departamento" list="department-options" className="w-44" onBlur={(event) => void updateDepartment(employee, event.target.value)} aria-label={`Departamento de ${employee.displayName}`} />
                 <Badge variant={employee.active ? "success" : "secondary"}>{employee.active ? "Activa" : "Desactivada"}</Badge>
-                {employee.role !== "admin" && <Button size="sm" variant="outline" onClick={() => void toggleActive(employee)}>{employee.active ? <><UserRoundX className="mr-2 h-4 w-4" />Desactivar</> : <><UserRound className="mr-2 h-4 w-4" />Activar</>}</Button>}
+                 {employee.role !== "admin" && <>
+                   <Button size="sm" variant="outline" onClick={() => setEditingEmployee(employee)}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
+                   <Button size="sm" variant="outline" onClick={() => void toggleActive(employee)}>{employee.active ? <><UserRoundX className="mr-2 h-4 w-4" />Desactivar</> : <><UserRound className="mr-2 h-4 w-4" />Activar</>}</Button>
+                 </>}
               </div>)}
             </div>
           )}
@@ -496,6 +512,124 @@ function EmployeeManager() {
       </Card>
       <ScheduleManager employees={employees} />
     </section>
+  );
+}
+
+type EmployeeEditValues = {
+  username: string;
+  displayName: string;
+  documentNumber: string;
+  email: string;
+  phone: string;
+  jobTitle: string;
+  department: string;
+  employmentStartDate: string;
+  employmentEndDate: string;
+  password: string;
+  active: boolean;
+  profilePhoto: File | null;
+};
+
+function EmployeeEditor({
+  employee,
+  departments,
+  onCancel,
+  onSaved,
+}: {
+  employee: EmployeeRecord;
+  departments: string[];
+  onCancel: () => void;
+  onSaved: (employee: EmployeeRecord) => void;
+}) {
+  const [values, setValues] = useState<EmployeeEditValues>(() => ({
+    username: employee.username,
+    displayName: employee.displayName,
+    documentNumber: employee.documentNumber ?? "",
+    email: employee.email ?? "",
+    phone: employee.phone ?? "",
+    jobTitle: employee.jobTitle ?? "",
+    department: employee.department ?? "",
+    employmentStartDate: employee.employmentStartDate,
+    employmentEndDate: employee.employmentEndDate ?? "",
+    password: "",
+    active: employee.active,
+    profilePhoto: null,
+  }));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const setValue = (field: keyof EmployeeEditValues, value: string | boolean | File | null) => {
+    setValues((current) => ({ ...current, [field]: value }));
+  };
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const body: Record<string, unknown> = {
+        username: values.username,
+        displayName: values.displayName,
+        documentNumber: values.documentNumber.trim() || null,
+        email: values.email.trim() || null,
+        phone: values.phone.trim() || null,
+        jobTitle: values.jobTitle.trim() || null,
+        department: values.department.trim() || null,
+        employmentStartDate: values.employmentStartDate,
+        employmentEndDate: values.employmentEndDate || null,
+        active: values.active,
+      };
+      if (values.password) body.password = values.password;
+      if (values.profilePhoto) body.profilePhoto = await imageToDataUrl(values.profilePhoto);
+      const updated = await apiFetch<EmployeeRecord>(`/admin/employees/${employee.id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      onSaved(updated);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No pudimos actualizar el empleado.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="border-primary/30 shadow-md">
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-lg"><Pencil className="h-5 w-5 text-primary" />Editar empleado</CardTitle>
+          <CardDescription>Actualiza los datos de {employee.displayName}. El historial y el horario se conservan.</CardDescription>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={saving} aria-label="Cancelar edición"><X className="h-4 w-4" /></Button>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="grid gap-3 md:grid-cols-2">
+          <label className="text-sm font-medium">Nombre completo<Input required maxLength={160} value={values.displayName} onChange={(event) => setValue("displayName", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Usuario de acceso<Input required maxLength={80} value={values.username} onChange={(event) => setValue("username", event.target.value)} autoComplete="off" className="mt-1" /></label>
+          <label className="text-sm font-medium">Nueva contraseña (opcional)<Input type="password" minLength={8} maxLength={256} value={values.password} onChange={(event) => setValue("password", event.target.value)} autoComplete="new-password" placeholder="Dejar en blanco para conservarla" className="mt-1" /></label>
+          <label className="text-sm font-medium">Documento<Input value={values.documentNumber} onChange={(event) => setValue("documentNumber", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Correo<Input type="email" value={values.email} onChange={(event) => setValue("email", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Teléfono<Input value={values.phone} onChange={(event) => setValue("phone", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Cargo<Input value={values.jobTitle} onChange={(event) => setValue("jobTitle", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Departamento<Input value={values.department} onChange={(event) => setValue("department", event.target.value)} list="department-options" className="mt-1" /></label>
+          <label className="text-sm font-medium">Inicio laboral<Input required type="date" value={values.employmentStartDate} onChange={(event) => setValue("employmentStartDate", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Fin laboral (opcional)<Input type="date" value={values.employmentEndDate} onChange={(event) => setValue("employmentEndDate", event.target.value)} className="mt-1" /></label>
+          <label className="text-sm font-medium">Nueva foto de perfil (opcional)
+            <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setValue("profilePhoto", event.target.files?.[0] ?? null)} className="mt-1" />
+          </label>
+          <label className="flex items-center gap-2 self-end rounded-md border px-3 py-2 text-sm font-medium">
+            <input type="checkbox" checked={values.active} onChange={(event) => setValue("active", event.target.checked)} className="h-4 w-4 accent-primary" />
+            Cuenta activa
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row md:col-span-2">
+            <Button type="submit" disabled={saving}><Save className="mr-2 h-4 w-4" />{saving ? "Guardando…" : "Guardar cambios"}</Button>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button>
+          </div>
+          {employee.profilePhotoUrl && <p className="text-xs text-muted-foreground md:col-span-2">La foto actual se conserva si no seleccionas una nueva.</p>}
+          {error && <p className="text-sm text-destructive md:col-span-2" role="alert">{error}</p>}
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

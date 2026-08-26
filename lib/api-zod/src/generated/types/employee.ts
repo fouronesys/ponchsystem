@@ -25,5 +25,8 @@ export interface Employee {
   role: EmployeeRole;
   /** @nullable */
   profilePhotoUrl: string | null;
+  employmentStartDate: Date;
+  /** @nullable */
+  employmentEndDate: Date | null;
   createdAt: Date;
 }

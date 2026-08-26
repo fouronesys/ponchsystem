@@ -136,6 +136,14 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
     const values: Partial<typeof employeesTable.$inferInsert> = {
       active: typeof req.body?.active === "boolean" ? req.body.active : existing.active,
     };
+    if ("username" in (req.body ?? {})) {
+      const username = normalizeUsername(typeof req.body.username === "string" ? req.body.username : "");
+      if (!username || username.length > 80) {
+        res.status(400).json({ error: "El usuario de acceso debe tener entre 1 y 80 caracteres." });
+        return;
+      }
+      values.username = username;
+    }
     if ("employmentStartDate" in (req.body ?? {})) {
       const startDate = isoDate(req.body.employmentStartDate);
       if (!startDate) {
@@ -166,7 +174,15 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
       res.status(400).json({ error: "La fecha de finalización debe ser posterior o igual al inicio laboral." });
       return;
     }
-    if (typeof req.body?.displayName === "string" && req.body.displayName.trim()) {
+    if ("displayName" in (req.body ?? {})) {
+      if (typeof req.body.displayName !== "string" || !req.body.displayName.trim()) {
+        res.status(400).json({ error: "El nombre completo es obligatorio." });
+        return;
+      }
+      if (req.body.displayName.trim().length > 160) {
+        res.status(400).json({ error: "El nombre completo no puede superar 160 caracteres." });
+        return;
+      }
       values.displayName = req.body.displayName.trim();
     }
     for (const field of ["documentNumber", "email", "phone", "jobTitle", "department"] as const) {
@@ -185,6 +201,10 @@ router.put("/admin/employees/:id", requireAdministrator, async (req, res): Promi
     const [updated] = await db.update(employeesTable).set(values).where(eq(employeesTable.id, existing.id)).returning();
     res.json(toEmployeeResponse(updated));
   } catch (error) {
+    if (String(error).includes("UNIQUE")) {
+      res.status(409).json({ error: "Ese nombre de usuario ya está en uso." });
+      return;
+    }
     res.status(400).json({ error: error instanceof Error ? error.message : "No fue posible actualizar el empleado." });
   }
 });

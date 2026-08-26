@@ -221,6 +221,9 @@ export interface Employee {
   role: EmployeeRole;
   /** @nullable */
   profilePhotoUrl: string | null;
+  employmentStartDate: string;
+  /** @nullable */
+  employmentEndDate: string | null;
   createdAt: string;
 }
 
@@ -252,9 +255,17 @@ export interface EmployeeCreateInput {
   department?: string;
   /** @maxLength 3000000 */
   profilePhoto?: string;
+  employmentStartDate?: string;
+  /** @nullable */
+  employmentEndDate?: string | null;
 }
 
 export interface EmployeeUpdateInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  username?: string;
   /**
      * @minLength 1
      * @maxLength 160
@@ -278,6 +289,9 @@ export interface EmployeeUpdateInput {
   /** @maxLength 3000000 */
   profilePhoto?: string;
   active?: boolean;
+  employmentStartDate?: string;
+  /** @nullable */
+  employmentEndDate?: string | null;
 }
 
 export interface WeeklyScheduleDay {

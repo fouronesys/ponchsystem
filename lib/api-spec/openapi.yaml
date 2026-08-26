@@ -639,8 +639,10 @@ components:
         active: { type: boolean }
         role: { type: string, enum: [admin, employee] }
         profilePhotoUrl: { type: ["string", "null"] }
+        employmentStartDate: { type: string, format: date }
+        employmentEndDate: { type: ["string", "null"], format: date }
         createdAt: { type: string, format: date-time }
-      required: [id, username, displayName, documentNumber, email, phone, jobTitle, department, active, role, profilePhotoUrl, createdAt]
+      required: [id, username, displayName, documentNumber, email, phone, jobTitle, department, active, employmentStartDate, employmentEndDate, role, profilePhotoUrl, createdAt]
     EmployeeCreateInput:
       type: object
       properties:
@@ -653,10 +655,13 @@ components:
         jobTitle: { type: string, maxLength: 120 }
         department: { type: string, maxLength: 120 }
         profilePhoto: { type: string, maxLength: 3000000 }
+        employmentStartDate: { type: string, format: date }
+        employmentEndDate: { type: ["string", "null"], format: date }
       required: [username, password, displayName]
     EmployeeUpdateInput:
       type: object
       properties:
+        username: { type: string, minLength: 1, maxLength: 80 }
         displayName: { type: string, minLength: 1, maxLength: 160 }
         documentNumber: { type: ["string", "null"] }
         email: { type: ["string", "null"] }
@@ -666,6 +671,8 @@ components:
         password: { type: string, minLength: 8, maxLength: 256 }
         profilePhoto: { type: string, maxLength: 3000000 }
         active: { type: boolean }
+        employmentStartDate: { type: string, format: date }
+        employmentEndDate: { type: ["string", "null"], format: date }
     WeeklyScheduleDay:
       type: object
       properties:

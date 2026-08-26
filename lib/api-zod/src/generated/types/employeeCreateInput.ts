@@ -34,4 +34,7 @@ export interface EmployeeCreateInput {
   department?: string;
   /** @maxLength 3000000 */
   profilePhoto?: string;
+  employmentStartDate?: Date;
+  /** @nullable */
+  employmentEndDate?: Date | null;
 }

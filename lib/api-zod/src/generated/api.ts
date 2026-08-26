@@ -304,6 +304,8 @@ export const ListEmployeesResponseItem = zod.object({
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
+  "employmentStartDate": zod.coerce.date(),
+  "employmentEndDate": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
@@ -342,7 +344,9 @@ export const CreateEmployeeBody = zod.object({
   "phone": zod.string().max(createEmployeeBodyPhoneMax).optional(),
   "jobTitle": zod.string().max(createEmployeeBodyJobTitleMax).optional(),
   "department": zod.string().max(createEmployeeBodyDepartmentMax).optional(),
-  "profilePhoto": zod.string().max(createEmployeeBodyProfilePhotoMax).optional()
+  "profilePhoto": zod.string().max(createEmployeeBodyProfilePhotoMax).optional(),
+  "employmentStartDate": zod.coerce.date().optional(),
+  "employmentEndDate": zod.coerce.date().nullish()
 })
 
 export const CreateEmployeeResponse = zod.object({
@@ -357,6 +361,8 @@ export const CreateEmployeeResponse = zod.object({
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
+  "employmentStartDate": zod.coerce.date(),
+  "employmentEndDate": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 })
 
@@ -368,6 +374,8 @@ export const UpdateEmployeeParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateEmployeeBodyUsernameMax = 80;
+
 export const updateEmployeeBodyDisplayNameMax = 160;
 
 export const updateEmployeeBodyPasswordMin = 8;
@@ -378,6 +386,7 @@ export const updateEmployeeBodyProfilePhotoMax = 3000000;
 
 
 export const UpdateEmployeeBody = zod.object({
+  "username": zod.string().min(1).max(updateEmployeeBodyUsernameMax).optional(),
   "displayName": zod.string().min(1).max(updateEmployeeBodyDisplayNameMax).optional(),
   "documentNumber": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -386,7 +395,9 @@ export const UpdateEmployeeBody = zod.object({
   "department": zod.string().nullish(),
   "password": zod.string().min(updateEmployeeBodyPasswordMin).max(updateEmployeeBodyPasswordMax).optional(),
   "profilePhoto": zod.string().max(updateEmployeeBodyProfilePhotoMax).optional(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "employmentStartDate": zod.coerce.date().optional(),
+  "employmentEndDate": zod.coerce.date().nullish()
 })
 
 export const UpdateEmployeeResponse = zod.object({
@@ -401,6 +412,8 @@ export const UpdateEmployeeResponse = zod.object({
   "active": zod.boolean(),
   "role": zod.enum(['admin', 'employee']),
   "profilePhotoUrl": zod.string().nullable(),
+  "employmentStartDate": zod.coerce.date(),
+  "employmentEndDate": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 })
 

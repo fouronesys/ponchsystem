@@ -9,6 +9,11 @@
 export interface EmployeeUpdateInput {
   /**
      * @minLength 1
+     * @maxLength 80
+     */
+  username?: string;
+  /**
+     * @minLength 1
      * @maxLength 160
      */
   displayName?: string;
@@ -30,4 +35,7 @@ export interface EmployeeUpdateInput {
   /** @maxLength 3000000 */
   profilePhoto?: string;
   active?: boolean;
+  employmentStartDate?: Date;
+  /** @nullable */
+  employmentEndDate?: Date | null;
 }
