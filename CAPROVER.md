@@ -20,6 +20,14 @@ compilada y el API continúa disponible bajo `/api`, ambos en el mismo dominio.
 La aplicación almacena SQLite en `/app/data/attendance.sqlite`. CapRover
 conserva esa carpeta cuando se actualiza o reinicia el contenedor.
 
+En cada arranque, antes de aceptar tráfico, la aplicación ejecuta migraciones
+de datos idempotentes. La migración de reparación histórica busca registros
+guardados como `check_out` sin una entrada anterior en la misma fecha local,
+los convierte en `check_in` y guarda cada cambio en
+`attendance_event_repairs`. No modifica las salidas válidas de turnos que
+cruzan medianoche. La migración queda marcada en `app_migrations` y sólo se
+ejecuta una vez por base de datos.
+
 ## 2. Variables de entorno
 
 Configura estas variables en **App Configs > Environmental Variables**:

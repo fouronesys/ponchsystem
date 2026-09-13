@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import * as schema from "./schema";
+import { repairHistoricalAttendanceOrder } from "./historical-attendance-repair";
 
 const databasePath =
   process.env.SQLITE_DATABASE_PATH ??
@@ -281,6 +282,15 @@ if (tableColumns("employees").has("employment_start_date")) {
     WHERE employment_start_date = '1970-01-01'
   `);
 }
+
+const historicalAttendanceRepair = repairHistoricalAttendanceOrder(sqlite);
+if (!historicalAttendanceRepair.skipped) {
+  console.warn(
+    "Historical attendance repair completed:",
+    JSON.stringify(historicalAttendanceRepair),
+  );
+}
+
 export const db = drizzle(sqlite, { schema });
 
 const QR_CLEANUP_BATCH_SIZE = 100;
