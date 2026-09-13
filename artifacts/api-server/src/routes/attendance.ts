@@ -60,6 +60,7 @@ import {
 import {
   attendanceTimingStatus,
   getWeeklySchedule,
+  minutes,
   scheduleDayForDate,
   type AttendanceTimingStatus,
 } from "../lib/weeklySchedule";
@@ -102,11 +103,23 @@ function bogotaDay(value: Date): string {
 export function hasPreviousOpenAttendance(
   events: ReadonlyArray<{ type: string; occurredAt: Date }>,
   now: Date,
+  scheduleDays: Array<{ dayOfWeek: number; startTime: string | null; endTime: string | null }>,
 ): boolean {
   const latest = events[0];
   if (!latest || latest.type !== "check_in") return false;
   const age = now.getTime() - latest.occurredAt.getTime();
-  return age >= 0 && age <= 18 * 60 * 60 * 1000;
+  if (age < 0 || age > 18 * 60 * 60 * 1000) return false;
+
+  const previousScheduleDay = scheduleDayForDate(scheduleDays, latest.occurredAt);
+  const currentScheduleDay = scheduleDayForDate(scheduleDays, now);
+  return Boolean(
+    previousScheduleDay &&
+      currentScheduleDay &&
+      previousScheduleDay.dayOfWeek === currentScheduleDay.dayOfWeek &&
+      previousScheduleDay.startTime &&
+      previousScheduleDay.endTime &&
+      minutes(previousScheduleDay.endTime) < minutes(previousScheduleDay.startTime),
+  );
 }
 
 function eventResponse(
@@ -336,9 +349,7 @@ async function recordAttendanceWithToken(
         ) {
           return null;
         }
-        const previousOpenEvent = !todayLatest &&
-          hasPreviousOpenAttendance(events, now) &&
-          scheduleDayForDate(schedule.days, events[0]!.occurredAt)?.endTime !== null;
+        const previousOpenEvent = !todayLatest && hasPreviousOpenAttendance(events, now, schedule.days);
         const created = tx
           .insert(attendanceEventsTable)
           .values({
