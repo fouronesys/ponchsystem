@@ -62,25 +62,44 @@ function blankWeek(): Array<{
 }
 
 test("los horarios semanales respetan permisos y validaciones", async () => {
-  const referenceNow = new Date("2026-08-26T14:00:00.000Z");
+  const referenceNow = new Date("2026-08-26T06:00:00.000Z");
+  const regularSchedule = [
+    { dayOfWeek: 2, startTime: "16:00", endTime: "23:59" },
+    { dayOfWeek: 3, startTime: "16:00", endTime: "23:59" },
+  ];
+  const overnightSchedule = [
+    { dayOfWeek: 2, startTime: "16:00", endTime: "06:00" },
+    { dayOfWeek: 3, startTime: "16:00", endTime: "23:59" },
+  ];
   assert.equal(
     attendanceRoutes.hasPreviousOpenAttendance(
       [
-        { type: "check_out", occurredAt: new Date("2026-08-26T12:30:00.000Z") },
-        { type: "check_in", occurredAt: new Date("2026-08-26T11:00:00.000Z") },
+        { type: "check_out", occurredAt: new Date("2026-08-26T04:30:00.000Z") },
+        { type: "check_in", occurredAt: new Date("2026-08-26T03:00:00.000Z") },
       ],
       referenceNow,
+      regularSchedule,
     ),
     false,
     "una salida previa debe permitir que la próxima marcación sea una entrada",
   );
   assert.equal(
     attendanceRoutes.hasPreviousOpenAttendance(
-      [{ type: "check_in", occurredAt: new Date("2026-08-26T11:00:00.000Z") }],
+      [{ type: "check_in", occurredAt: new Date("2026-08-26T04:00:00.000Z") }],
       referenceNow,
+      overnightSchedule,
     ),
     true,
     "una entrada reciente sin salida debe poder cerrarse al cruzar medianoche",
+  );
+  assert.equal(
+    attendanceRoutes.hasPreviousOpenAttendance(
+      [{ type: "check_in", occurredAt: new Date("2026-08-25T21:00:00.000Z") }],
+      referenceNow,
+      regularSchedule,
+    ),
+    false,
+    "una jornada que termina a las 23:59 no debe continuar después de medianoche",
   );
 
   const password = "weekly-schedule-test-password";

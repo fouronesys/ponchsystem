@@ -100,6 +100,21 @@ function bogotaDay(value: Date): string {
   return `${piece("year")}-${piece("month")}-${piece("day")}`;
 }
 
+function bogotaDayAndMinutes(value: Date): { dayOfWeek: number; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Bogota",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+  const dayOfWeek = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[weekday ?? "Sun"];
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+  return { dayOfWeek, minutes: hour * 60 + minute };
+}
+
 export function hasPreviousOpenAttendance(
   events: ReadonlyArray<{ type: string; occurredAt: Date }>,
   now: Date,
@@ -111,14 +126,15 @@ export function hasPreviousOpenAttendance(
   if (age < 0 || age > 18 * 60 * 60 * 1000) return false;
 
   const previousScheduleDay = scheduleDayForDate(scheduleDays, latest.occurredAt);
-  const currentScheduleDay = scheduleDayForDate(scheduleDays, now);
+  const previous = bogotaDayAndMinutes(latest.occurredAt);
+  const current = bogotaDayAndMinutes(now);
   return Boolean(
     previousScheduleDay &&
-      currentScheduleDay &&
-      previousScheduleDay.dayOfWeek === currentScheduleDay.dayOfWeek &&
+      previous.dayOfWeek === (current.dayOfWeek + 6) % 7 &&
       previousScheduleDay.startTime &&
       previousScheduleDay.endTime &&
-      minutes(previousScheduleDay.endTime) < minutes(previousScheduleDay.startTime),
+      minutes(previousScheduleDay.endTime) < minutes(previousScheduleDay.startTime) &&
+      current.minutes < minutes(previousScheduleDay.endTime),
   );
 }
 
