@@ -16,11 +16,12 @@ process.env.SQLITE_DATABASE_PATH = databasePath;
 process.env.SESSION_SECRET = "weekly-schedule-http-test-secret";
 process.env.NODE_ENV = "test";
 
-const [{ default: app }, dbModule, localAuth, attendanceRoutes] = await Promise.all([
+const [{ default: app }, dbModule, localAuth, attendanceRoutes, weeklySchedule] = await Promise.all([
   import("./app"),
   import("@workspace/db"),
   import("./lib/localAuth"),
   import("./routes/attendance"),
+  import("./lib/weeklySchedule"),
 ]);
 
 const { db, employeesTable, weeklySchedulesTable } = dbModule;
@@ -71,6 +72,29 @@ test("los horarios semanales respetan permisos y validaciones", async () => {
     { dayOfWeek: 2, startTime: "16:00", endTime: "06:00" },
     { dayOfWeek: 3, startTime: "16:00", endTime: "23:59" },
   ];
+  assert.equal(
+    weeklySchedule.isPreviousShiftSpillover(
+      new Date("2026-08-26T05:04:00.000Z"),
+      [...regularSchedule, { dayOfWeek: 3, startTime: "16:00", endTime: "23:59" }],
+    ),
+    true,
+    "la salida de madrugada no debe bloquear la entrada de la jornada actual",
+  );
+  assert.equal(
+    weeklySchedule.isPreviousShiftSpillover(
+      new Date("2026-08-26T20:01:00.000Z"),
+      [...regularSchedule, { dayOfWeek: 3, startTime: "16:00", endTime: "23:59" }],
+    ),
+    false,
+  );
+  assert.equal(
+    weeklySchedule.isPreviousShiftSpillover(
+      new Date("2026-08-26T05:04:00.000Z"),
+      [{ dayOfWeek: 2, startTime: "16:00", endTime: "01:00" }],
+    ),
+    true,
+    "un turno configurado hasta la 1:00 a. m. debe aceptar una salida ligeramente tardía",
+  );
   assert.equal(
     attendanceRoutes.hasPreviousOpenAttendance(
       [

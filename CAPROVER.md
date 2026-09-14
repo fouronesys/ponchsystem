@@ -21,12 +21,14 @@ La aplicación almacena SQLite en `/app/data/attendance.sqlite`. CapRover
 conserva esa carpeta cuando se actualiza o reinicia el contenedor.
 
 En cada arranque, antes de aceptar tráfico, la aplicación ejecuta migraciones
-de datos idempotentes. La migración de reparación histórica busca registros
-guardados como `check_out` sin una entrada anterior en la misma fecha local,
-los convierte en `check_in` y guarda cada cambio en
-`attendance_event_repairs`. No modifica las salidas válidas de turnos que
-cruzan medianoche. La migración queda marcada en `app_migrations` y sólo se
-ejecuta una vez por base de datos.
+de datos idempotentes. La reparación histórica distingue las salidas de
+madrugada que pertenecen al turno anterior —incluidas salidas hasta seis horas
+después del cierre configurado— de las salidas realmente invertidas. Sólo
+convierte estas últimas en `check_in` y registra cada cambio en
+`attendance_event_repairs`. Si una versión anterior ya convirtió una salida de
+madrugada por error, la siguiente migración la revierte y registra la acción en
+`attendance_event_repair_actions`. Las migraciones quedan marcadas en
+`app_migrations` y sólo se ejecutan una vez por base de datos.
 
 ## 2. Variables de entorno
 
