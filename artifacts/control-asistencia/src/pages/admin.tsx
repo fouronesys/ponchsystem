@@ -30,10 +30,13 @@ export default function AdminPage() {
   const [displayExpiresAt, setDisplayExpiresAt] = useState("");
   const [displayBusy, setDisplayBusy] = useState(false);
   const [displayError, setDisplayError] = useState("");
+  const [attendanceDate, setAttendanceDate] = useState(() => (
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date())
+  ));
   
   // Dashboard data queries
   const { data: summary, isLoading: isLoadingSummary } = useGetAttendanceSummary();
-  const { data: events, isLoading: isLoadingEvents } = useListAttendanceEvents();
+  const { data: events, isLoading: isLoadingEvents } = useListAttendanceEvents({ date: attendanceDate });
   
   const rotateToken = useRotateQrToken();
 
@@ -159,11 +162,26 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle className="text-lg">Bitácora de Eventos</CardTitle>
-                <CardDescription>Registro en tiempo real</CardDescription>
+                <CardDescription>Registro de la jornada seleccionada</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: getListAttendanceEventsQueryKey() })}>
-                <RotateCw className="w-4 h-4 mr-2" /> Refrescar
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="date"
+                  value={attendanceDate}
+                  onChange={(event) => setAttendanceDate(event.target.value)}
+                  aria-label="Fecha de la jornada"
+                  className="w-40"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => queryClient.invalidateQueries({
+                    queryKey: getListAttendanceEventsQueryKey({ date: attendanceDate }),
+                  })}
+                >
+                  <RotateCw className="w-4 h-4 mr-2" /> Refrescar
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

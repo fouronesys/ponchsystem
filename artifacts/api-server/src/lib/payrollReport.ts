@@ -7,8 +7,9 @@ import {
 import { and, asc, gte, isNull, lte, lt, or } from "drizzle-orm";
 import {
   attendanceTimingStatus,
+  attendanceDayForDate,
   getWeeklySchedule,
-  scheduleDayForDate,
+  scheduleDayStartingOnDate,
   type AttendanceTimingStatus,
 } from "./weeklySchedule";
 
@@ -189,15 +190,24 @@ export async function buildPayrollAttendanceReport(
       .where(
         and(
           gte(attendanceEventsTable.occurredAt, range.startAt),
-          lt(attendanceEventsTable.occurredAt, range.endExclusive),
+          // Include the next local calendar day so an overnight shift ending
+          // after midnight can close the final report day.
+          lt(
+            attendanceEventsTable.occurredAt,
+            dateAtBogotaMidnight(nextDate(nextDate(range.endDate))),
+          ),
         ),
       )
       .orderBy(asc(attendanceEventsTable.employeeId), asc(attendanceEventsTable.occurredAt)),
   ]);
   const dates = reportDates(range.startDate, range.endDate);
+  const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
+  await Promise.all(employees.map(async (employee) => {
+    schedules.set(employee.id, (await getWeeklySchedule(employee.id)).days);
+  }));
   const eventsByEmployeeAndDay = new Map<string, Map<string, typeof events>>();
   for (const event of events) {
-    const date = reportDay(event.occurredAt);
+    const date = attendanceDayForDate(event.occurredAt, schedules.get(event.employeeId) ?? []);
     const perEmployee = eventsByEmployeeAndDay.get(event.employeeId) ?? new Map();
     const current = perEmployee.get(date) ?? [];
     current.push(event);
@@ -206,8 +216,7 @@ export async function buildPayrollAttendanceReport(
   }
 
   const reportEmployees = await Promise.all(employees.map(async (employee) => {
-    const schedule = await getWeeklySchedule(employee.id);
-    return buildEmployeeReport(employee, schedule.days, dates, eventsByEmployeeAndDay.get(employee.id));
+    return buildEmployeeReport(employee, schedules.get(employee.id) ?? [], dates, eventsByEmployeeAndDay.get(employee.id));
   }));
 
   return {
@@ -251,7 +260,7 @@ function buildEmployeeReport(
       date >= employee.employmentStartDate &&
       (!employee.employmentEndDate || date <= employee.employmentEndDate);
     const scheduleDay = employedOnDate
-      ? scheduleDayForDate(scheduleDays, dateAtBogotaMidnight(date))
+      ? scheduleDayStartingOnDate(scheduleDays, dateAtBogotaMidnight(date))
       : undefined;
     const scheduled = Boolean(scheduleDay?.startTime && scheduleDay.endTime);
     const { checkIn, checkOut } = employedOnDate

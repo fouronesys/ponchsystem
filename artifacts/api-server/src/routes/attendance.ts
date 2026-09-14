@@ -59,6 +59,7 @@ import {
 } from "../lib/payrollReport";
 import {
   attendanceTimingStatus,
+  attendanceDayForDate,
   getWeeklySchedule,
   isPreviousShiftSpillover,
   minutes,
@@ -135,7 +136,7 @@ export function hasPreviousOpenAttendance(
       previousScheduleDay.startTime &&
       previousScheduleDay.endTime &&
       minutes(previousScheduleDay.endTime) < minutes(previousScheduleDay.startTime) &&
-      current.minutes < minutes(previousScheduleDay.endTime),
+      current.minutes <= minutes(previousScheduleDay.endTime),
   );
 }
 
@@ -678,13 +679,16 @@ router.get(
       )
       .orderBy(desc(attendanceEventsTable.occurredAt))
       .limit(100);
-    const filterDay = parsed.data.date ? bogotaDay(parsed.data.date) : null;
     const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
     await Promise.all([...new Set(rows.map((row) => row.employee.id))].map(async (employeeId) => {
       schedules.set(employeeId, (await getWeeklySchedule(employeeId)).days);
     }));
+    const filterDay = parsed.data.date ? bogotaDay(parsed.data.date) : null;
     const events = rows
-      .filter((row) => !filterDay || bogotaDay(row.event.occurredAt) === filterDay)
+      .filter((row) => !filterDay || attendanceDayForDate(
+        row.event.occurredAt,
+        schedules.get(row.employee.id) ?? [],
+      ) === filterDay)
       .map((row) => eventResponse(row.event, row.employee, schedules.get(row.employee.id)));
 
     res.json(ListAttendanceEventsResponse.parse(events));
@@ -749,7 +753,13 @@ router.get(
         .orderBy(desc(attendanceEventsTable.occurredAt))
         .limit(500),
     ]);
-    const todayRows = rows.filter((row) => bogotaDay(row.event.occurredAt) === today);
+    const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
+    await Promise.all([...new Set(rows.map((row) => row.employee.id))].map(async (employeeId) => {
+      schedules.set(employeeId, (await getWeeklySchedule(employeeId)).days);
+    }));
+    const todayRows = rows.filter((row) =>
+      attendanceDayForDate(row.event.occurredAt, schedules.get(row.employee.id) ?? []) === today,
+    );
     const latestByEmployee = new Map<string, (typeof todayRows)[number]>();
     for (const row of todayRows) {
       if (!latestByEmployee.has(row.event.employeeId)) {
@@ -759,11 +769,7 @@ router.get(
     const present = [...latestByEmployee.values()].filter(
       (row) => row.event.type === "check_in",
     );
-     const schedules = new Map<string, Awaited<ReturnType<typeof getWeeklySchedule>>["days"]>();
-     await Promise.all([...new Set(todayRows.map((row) => row.employee.id))].map(async (employeeId) => {
-       schedules.set(employeeId, (await getWeeklySchedule(employeeId)).days);
-     }));
-     const late = todayRows.filter((row) =>
+    const late = todayRows.filter((row) =>
        row.event.type === "check_in" &&
        attendanceTimingStatus("check_in", row.event.occurredAt, scheduleDayForDate(schedules.get(row.employee.id) ?? [], row.event.occurredAt)) === "late"
      );

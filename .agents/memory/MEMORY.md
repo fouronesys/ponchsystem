@@ -4,3 +4,4 @@
 - [SQLite transaction callbacks](sqlite-transaction-callbacks.md) — Better SQLite transactions must be synchronous; execute statements with `run()` inside the callback.
 - [OpenAPI nullable unions](openapi-nullable-unions.md) — use oneOf with a null schema for nullable refs; Orval otherwise may generate an impossible enum intersection.
 - [GitHub branch protection checks](github-branch-protection-checks.md) — the protection API accepts either legacy contexts or modern checks, not both together.
+- [Attendance shift dates](attendance-shift-dates.md) — overnight events need a schedule-start date distinct from their calendar timestamp, including the exact shift end.

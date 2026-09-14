@@ -63,9 +63,18 @@ export function minutes(value: string): number {
   return hours * 60 + minutesValue;
 }
 
-function bogotaParts(value: Date): { dayOfWeek: number; minutes: number } {
+function bogotaParts(value: Date): {
+  year: number;
+  month: number;
+  day: number;
+  dayOfWeek: number;
+  minutes: number;
+} {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -75,7 +84,55 @@ function bogotaParts(value: Date): { dayOfWeek: number; minutes: number } {
   const dayOfWeek = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[weekday ?? "Sun"];
   const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
-  return { dayOfWeek, minutes: hour * 60 + minute };
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value ?? 0),
+    month: Number(parts.find((part) => part.type === "month")?.value ?? 0),
+    day: Number(parts.find((part) => part.type === "day")?.value ?? 0),
+    dayOfWeek,
+    minutes: hour * 60 + minute,
+  };
+}
+
+function formatCalendarDate(year: number, month: number, day: number): string {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function calendarDate(value: Date): string {
+  const current = bogotaParts(value);
+  return formatCalendarDate(current.year, current.month, current.day);
+}
+
+function previousCalendarDate(value: Date): string {
+  const current = bogotaParts(value);
+  const previous = new Date(Date.UTC(current.year, current.month - 1, current.day - 1));
+  return previous.toISOString().slice(0, 10);
+}
+
+type ScheduleDayWithHours = Pick<WeeklyScheduleDayInput, "dayOfWeek" | "startTime" | "endTime">;
+
+function previousOvernightSchedule<T extends ScheduleDayWithHours>(
+  current: ReturnType<typeof bogotaParts>,
+  days: Array<T>,
+): T | undefined {
+  const previous = days.find((day) => day.dayOfWeek === (current.dayOfWeek + 6) % DAYS_IN_WEEK);
+  if (
+    previous?.startTime &&
+    previous.endTime &&
+    minutes(previous.endTime) < minutes(previous.startTime) &&
+    current.minutes <= minutes(previous.endTime)
+  ) {
+    return previous;
+  }
+  return undefined;
+}
+
+export function attendanceDayForDate(
+  date: Date,
+  days: Array<ScheduleDayWithHours>,
+): string {
+  return previousOvernightSchedule(bogotaParts(date), days)
+    ? previousCalendarDate(date)
+    : calendarDate(date);
 }
 
 export function attendanceTimingStatus(
@@ -89,7 +146,7 @@ export function attendanceTimingStatus(
   const start = minutes(scheduleDay.startTime);
   const end = minutes(scheduleDay.endTime);
   const overnight = end < start;
-  const normalizedActual = overnight && actual < end ? actual + 24 * 60 : actual;
+  const normalizedActual = overnight && actual <= end ? actual + 24 * 60 : actual;
   const normalizedEnd = overnight ? end + 24 * 60 : end;
   if (type === "check_in") {
     if (normalizedActual < start) return "early";
@@ -103,33 +160,24 @@ export function attendanceTimingStatus(
   return "late";
 }
 
-export function scheduleDayForDate<T extends Pick<WeeklyScheduleDayInput, "dayOfWeek">>(
+export function scheduleDayForDate<T extends ScheduleDayWithHours>(
   days: T[],
   date: Date,
 ): T | undefined {
   const current = bogotaParts(date);
-  const sameDay = days.find((day) => day.dayOfWeek === current.dayOfWeek);
-  const sameDayWithHours = sameDay as (T & Pick<WeeklyScheduleDayInput, "startTime" | "endTime">) | undefined;
-  if (
-    sameDayWithHours?.startTime &&
-    sameDayWithHours.endTime &&
-    minutes(sameDayWithHours.endTime) >= minutes(sameDayWithHours.startTime)
-  ) {
-    return sameDay;
-  }
+  const previous = previousOvernightSchedule(current, days);
+  if (previous) return previous as T;
 
-  const previousDayOfWeek = (current.dayOfWeek + 6) % DAYS_IN_WEEK;
-  const previous = days.find((day) => day.dayOfWeek === previousDayOfWeek);
-  const previousWithHours = previous as (T & Pick<WeeklyScheduleDayInput, "startTime" | "endTime">) | undefined;
-  if (
-    previousWithHours?.startTime &&
-    previousWithHours.endTime &&
-    minutes(previousWithHours.endTime) < minutes(previousWithHours.startTime) &&
-    current.minutes < minutes(previousWithHours.endTime)
-  ) {
-    return previous;
-  }
+  const sameDay = days.find((day) => day.dayOfWeek === current.dayOfWeek);
   return sameDay;
+}
+
+export function scheduleDayStartingOnDate<T extends ScheduleDayWithHours>(
+  days: T[],
+  date: Date,
+): T | undefined {
+  const current = bogotaParts(date);
+  return days.find((day) => day.dayOfWeek === current.dayOfWeek);
 }
 
 export function isPreviousShiftSpillover(
@@ -143,7 +191,7 @@ export function isPreviousShiftSpillover(
   const previousStart = minutes(previous.startTime);
   const previousEnd = minutes(previous.endTime);
   if (previousEnd < previousStart) {
-    return current.minutes < previousEnd;
+    return current.minutes <= previousEnd;
   }
 
   const spilloverCutoff = previousEnd + MAX_POST_SHIFT_SPILLOVER_MINUTES - 24 * 60;
