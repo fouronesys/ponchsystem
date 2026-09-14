@@ -60,6 +60,7 @@ import {
 import {
   attendanceTimingStatus,
   getWeeklySchedule,
+  isPreviousShiftSpillover,
   minutes,
   scheduleDayForDate,
   type AttendanceTimingStatus,
@@ -273,11 +274,15 @@ router.get(
     const employee = req.employee!;
     const events = await employeeEvents(employee.id);
     const today = bogotaDay(new Date());
-    const todayEvents = events.filter((event) => bogotaDay(event.occurredAt) === today);
+    const schedule = await getWeeklySchedule(employee.id);
+    const todayEvents = events.filter(
+      (event) =>
+        bogotaDay(event.occurredAt) === today &&
+        !isPreviousShiftSpillover(event.occurredAt, schedule.days),
+    );
     const latest = todayEvents[0];
     const checkIn = todayEvents.find((event) => event.type === "check_in");
     const checkOut = todayEvents.find((event) => event.type === "check_out");
-    const schedule = await getWeeklySchedule(employee.id);
     const checkInTimingStatus = checkIn
       ? attendanceTimingStatus("check_in", checkIn.occurredAt, scheduleDayForDate(schedule.days, checkIn.occurredAt))
       : null;
@@ -356,7 +361,11 @@ async function recordAttendanceWithToken(
           .limit(50)
           .all();
         const today = bogotaDay(now);
-        const todayLatest = events.find((item) => bogotaDay(item.occurredAt) === today);
+        const todayLatest = events.find(
+          (item) =>
+            bogotaDay(item.occurredAt) === today &&
+            !isPreviousShiftSpillover(item.occurredAt, schedule.days),
+        );
         if (
           tokenType === "manual" &&
           events[0] &&

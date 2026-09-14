@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 export const DAYS_IN_WEEK = 7;
+export const MAX_POST_SHIFT_SPILLOVER_MINUTES = 6 * 60;
 
 export type WeeklyScheduleDayInput = {
   dayOfWeek: number;
@@ -129,6 +130,24 @@ export function scheduleDayForDate<T extends Pick<WeeklyScheduleDayInput, "dayOf
     return previous;
   }
   return sameDay;
+}
+
+export function isPreviousShiftSpillover(
+  date: Date,
+  days: Array<Pick<WeeklyScheduleDayInput, "dayOfWeek" | "startTime" | "endTime">>,
+): boolean {
+  const current = bogotaParts(date);
+  const previous = days.find((day) => day.dayOfWeek === (current.dayOfWeek + 6) % DAYS_IN_WEEK);
+  if (!previous?.startTime || !previous.endTime) return false;
+
+  const previousStart = minutes(previous.startTime);
+  const previousEnd = minutes(previous.endTime);
+  if (previousEnd < previousStart) {
+    return current.minutes < previousEnd;
+  }
+
+  const spilloverCutoff = previousEnd + MAX_POST_SHIFT_SPILLOVER_MINUTES - 24 * 60;
+  return current.minutes <= spilloverCutoff;
 }
 
 export function validateWeeklySchedule(days: WeeklyScheduleDayInput[]): string | null {
